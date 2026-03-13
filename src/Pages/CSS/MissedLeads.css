@@ -1,0 +1,134 @@
+/* Existing styles */
+.missed-header {
+    height: 50px;
+    width: 98%;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.missed-search input {
+    height: 40px;
+    border: 2px solid #3454D1;
+    border-radius: 10px;
+    width: 200%;  
+    max-width: 200px;  
+    background-color: #FFFFFF;
+    padding-left: 10px;
+    font-size: 14px;
+    padding-right: 10px;
+    outline: none;
+    box-sizing: border-box;
+}
+
+.missed-Add-btn button {
+    height: 40px;
+    width: 100px;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+    font-weight: 400;
+    border: none;
+    background-color: #3454D1;
+    color: #FFFFFF;
+    font-family: "Poppins", serif;
+}
+
+.missed-table-container {
+    border: 1px solid #ddd;
+    background-color: #f9f9f9;
+    box-shadow: 0px 0px 12px 0px rgb(203, 201, 201);
+    border-radius: 20px;
+    width: 100%;
+    font-family: "Poppins", serif;
+    
+    
+}
+
+.missed-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.missed-table th,
+.missed-table td {
+    padding: 8px;
+    text-align: left;
+    border: 1px solid #ddd;
+    font-size: 18px;
+}
+
+.missed-table td>button{
+    border: none;
+    font-size: 18px;
+    margin: 0;
+    cursor: pointer;
+}
+.missed-table th {
+    background-color: #f2f2f2;
+    font-weight: bold;
+}
+.missed-card-container{
+    display: none;
+}
+/* Responsive Styles */
+@media (max-width: 768px) {
+    .missed-table th,
+    .missed-table td {
+        padding: 8px;
+    }
+    .missed-table-container{
+        display: none;
+    }
+    .missed-card-container{
+        display: block;
+    }
+
+    .missed-table-container {
+        width: 100%;
+    }
+
+    .missed-search input {
+        width: 150px;
+    }
+
+    .missed-Add-btn button {
+        font-size: 14px;
+        padding: 6px 12px;
+    }
+}
+
+@media (max-width: 320px) {
+    .missed-search input {
+        font-size: 12px;
+    }
+
+    .missed-Add-btn button {
+        width: 90px;
+        font-size: 14px;
+    }
+
+    .missed-table-container {
+        padding: 8px;
+    }
+
+    .missed-table {
+        font-size: 10px;
+        min-width: 320px;
+    }
+
+    .missed-table th,
+    .missed-table td {
+        padding: 6px;
+    }
+
+    .missed-table-container {
+        overflow-x: auto;
+    }
+
+    .missed-table {
+      min-width: 600px; 
+    }
+}

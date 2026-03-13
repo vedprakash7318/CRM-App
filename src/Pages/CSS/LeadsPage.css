@@ -1,0 +1,155 @@
+/* Clear Filters Button */
+.clear-filters-btn {
+  padding: 5px 12px !important;
+  background-color: #ff6b6b !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 4px !important;
+  font-size: 12px !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  transition: all 0.3s ease !important;
+}
+
+.clear-filters-btn:hover {
+  background-color: #ff5252 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 5px rgba(255, 107, 107, 0.3) !important;
+}
+
+/* Action buttons */
+.action-btn {
+  height: 35px !important;
+  width: 35px !important;
+  background-color: #EDF1FF !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 50% !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+}
+
+.action-btn:hover {
+  background-color: #3454D1 !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 8px rgba(52, 84, 209, 0.3) !important;
+}
+
+.action-btn:hover i {
+  color: white !important;
+}
+
+/* Tags Container */
+.tags-container {
+  display: flex !important;
+  gap: 6px !important;
+  flex-wrap: wrap !important;
+  max-width: 250px !important;
+  align-items: center !important;
+}
+
+/* Tag Chip Display - Chip Style */
+.tag-chip-display {
+  background-color: #E3F2FD !important;
+  color: #1976D2 !important;
+  padding: 4px 12px !important;
+  border-radius: 16px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  border: 1px solid #BBDEFB !important;
+  white-space: nowrap !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 24px !important;
+  line-height: 1 !important;
+  margin: 2px !important;
+  transition: all 0.2s ease !important;
+  cursor: default !important;
+}
+
+.tag-chip-display:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 6px rgba(25, 118, 210, 0.2) !important;
+}
+
+/* More Tags Chip */
+.tag-chip-more {
+  background-color: #f5f5f5 !important;
+  color: #666 !important;
+  border: 1px solid #ddd !important;
+}
+
+.tag-chip-more:hover {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Clear Filters Button */
+.clear-filters-btn {
+  padding: 5px 12px !important;
+  background-color: #ff6b6b !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 4px !important;
+  font-size: 12px !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  transition: all 0.3s ease !important;
+}
+
+.clear-filters-btn:hover {
+  background-color: #ff5252 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 5px rgba(255, 107, 107, 0.3) !important;
+}
+
+/* Action buttons */
+.action-btn {
+  height: 35px !important;
+  width: 35px !important;
+  background-color: #EDF1FF !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 50% !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+}
+
+.action-btn:hover {
+  background-color: #3454D1 !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 8px rgba(52, 84, 209, 0.3) !important;
+}
+
+.action-btn:hover i {
+  color: white !important;
+}
+
+/* Single Loader Styles */
+.single-loader-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  border-radius: 10px;
+}
+
+.single-loader-content {
+  text-align: center;
+  padding: 2rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}

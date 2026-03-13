@@ -1,0 +1,10 @@
+{
+    "status": [
+      { "value": "interested" },
+      { "value": "want_meeting" },
+      { "value": "busy" },
+      { "value": "not_interested" },
+      { "value": "call_not_connected"}
+    ]
+  }
+  

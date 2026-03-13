@@ -1,0 +1,127 @@
+/* Calendar component */
+.dialog-calaneder{
+  /* width: 50vw; */
+}
+
+/* Add this to your CSS file */
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;  /* Full page height */
+  flex-direction: column;
+  text-align: center;
+}
+
+.lead-count{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: gold;
+  font-weight: bolder;
+  font-size: 20px;
+}
+.calendar {
+  width: 100%;
+  min-height: 450px;
+  margin: 20px auto;
+  font-size: 20px;
+  border: none;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.react-calendar__tile {
+  border-radius: 8px;
+  transition: background-color 0.3s ease;
+}
+
+.react-calendar__tile:hover {
+  background-color: #f39c12;
+  color: white;
+}
+
+.react-calendar__tile--active {
+  background-color: rgb(105, 103, 103);
+  color: white;
+
+  &:hover{
+    background-color: #36404a;
+  }
+}
+
+/* Events Section */
+.has-event {
+  background-color: #ffeb3b;
+}
+
+.events-title {
+  font-size: 1.2rem;
+  display: none;
+  color: #2c3e50;
+  margin-top: 20px;
+}
+
+.event-list {
+  list-style-type: none;
+  padding-left: 0;
+  padding-right: 20px;
+}
+
+.event-item {
+  padding: 10px;
+  background-color: #ecf0f1;
+  margin: 5px 0;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.event-item:hover {
+  background-color: #bdc3c7;
+}
+.event-btns{
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+}
+/* Responsive Design */
+@media (max-width: 768px) {
+  .calendar {
+    width: 100%;
+    max-width: 90%;
+  }
+
+  .calendar-title {
+    font-size: 1.8rem;
+  }
+
+  .events-title {
+    font-size: 1rem;
+  }
+  .dialog-calaneder{
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .calendar {
+    max-width: 95%;
+  }
+
+  .calendar-title {
+    font-size: 1.5rem;
+  }
+
+  .modal-content {
+    padding: 15px;
+  }
+
+  .event-input {
+    padding: 8px;
+  }
+
+  .add-button {
+    padding: 8px;
+  }
+}

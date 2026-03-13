@@ -1,0 +1,61 @@
+/* Custom styling for the lead form modal */
+.leadFormOuter{
+  width: 50vw;
+}
+
+@media(max-width:768px){
+  .leadFormOuter{
+    width: 90vw;
+  }
+}
+/* Optional: Form styling for spacing */
+.p-field label {
+  font-weight: bold;
+}
+
+.p-inputtext, .p-dropdown {
+  width: 100%;
+}
+
+.p-grid .p-field {
+  margin-bottom: 1.5rem;
+}
+
+@media screen and (max-width: 768px) {
+  .p-multiselect.multiselect-responsive {
+    width: 100% !important;
+  }
+
+  .p-multiselect-panel {
+    width: 100% !important;
+    max-width: 100vw !important;
+  }
+
+  .p-dialog.leadFormOuter {
+    width: 90vw !important;
+  }
+}
+/* Make form fields stack vertically on mobile */
+@media (max-width: 768px) {
+  .p-grid {
+    display: block;
+  }
+
+  .p-field {
+    width: 100%;
+    margin-bottom: 1rem;
+  }
+
+  .p-button {
+    min-width: 100%; /* Buttons take full width on mobile */
+    margin-top: 1rem;
+  }
+}
+
+/* Ensure buttons look good on larger screens */
+@media (min-width: 768px) {
+  .p-button {
+    min-width: 120px;
+    margin-left: 1rem;
+  }
+}
