@@ -81,18 +81,6 @@ const Dashboard = ({ children }) => {
       action: "openModal"
     },
     { 
-      label: "Leads", 
-      path: "/leads", 
-      icon: "FileText",
-      hasDropdown: true,
-      submenu: [
-        { label: "Total Leads", path: "/leads" },
-        { label: "Closed Leads", path: "/closed" },
-        { label: "Negative Leads", path: "/negative" },
-        { label: "Request Leads", path: "/request" }
-      ]
-    },
-    { 
       label: "Pending Leads", 
       path: "/pending", 
       icon: "Info",
@@ -104,11 +92,23 @@ const Dashboard = ({ children }) => {
       icon: "Calendar",
       exact: true
     },
+    { label: "Request Leads", path: "/request" },
     { 
       label: "Missed Leads", 
       path: "/missedLeads", 
       icon: "UserX",
       exact: true
+    },
+     { 
+      label: "Leads", 
+      path: "/leads", 
+      icon: "FileText",
+      hasDropdown: true,
+      submenu: [
+        { label: "Total Leads", path: "/leads" },
+        { label: "Closed Leads", path: "/closed" },
+        { label: "Negative Leads", path: "/negative" },
+      ]
     },
     { 
       label: "Calender", 

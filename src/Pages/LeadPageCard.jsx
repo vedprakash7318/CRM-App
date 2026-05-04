@@ -19,8 +19,8 @@ function LeadPageCard({ TableTitle, onFollowupAdded }) {
   const [isEditMode, setEditMode] = useState(false);
   const [buttonTitle, setButtonTitle] = useState('');
   const [leadData, setLeadData] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(() => localStorage.getItem('leadSearchQuery') || '');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(() => localStorage.getItem('leadSearchQuery') || '');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false); // Add this for smooth refresh
   const [tagSearchQuery, setTagSearchQuery] = useState('');
@@ -82,14 +82,6 @@ function LeadPageCard({ TableTitle, onFollowupAdded }) {
     const savedStatus = localStorage.getItem('selectedStatusFilters');
     return savedStatus ? JSON.parse(savedStatus) : [];
   });
-
-  // Initialize search query from localStorage
-  useEffect(() => {
-    const savedSearch = localStorage.getItem('leadSearchQuery');
-    if (savedSearch) {
-      setSearchQuery(savedSearch);
-    }
-  }, []);
 
   // Effects
   useEffect(() => {
@@ -240,7 +232,7 @@ function LeadPageCard({ TableTitle, onFollowupAdded }) {
 
   // Track previous filter values to detect actual changes
   const prevFilters = useRef({
-    search: debouncedSearchQuery,
+    search: localStorage.getItem('leadSearchQuery') || '',
     tags: selectedTagValues,
     status: selectedStatusValues,
     services: selectedServiceValues

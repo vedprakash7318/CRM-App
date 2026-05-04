@@ -5,8 +5,7 @@ import Modal from '../Components/LeadForm';
 import './CSS/MissedLeads.css'
 import { useNavigate } from 'react-router-dom';
 import DynamicCard from '../Components/DynamicCard';
-import { useDispatch, useSelector } from 'react-redux';
-import { fetchAllFollowUps } from '../Features/LeadSlice';
+import axios from 'axios';
 
 function MissedLeads() {
   const [isNoteVisible, setIsNoteVisible] = useState(false);
@@ -16,19 +15,13 @@ function MissedLeads() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [leadData, setLeadData] = useState([]);
   const [tableTitle, setTableTitle] = useState('Missed Leads');
-  const [note, setNote] = useState(''); // Added missing state
-  const navigate = useNavigate();
-  const dispatch = useDispatch();
-  const followUps = useSelector((state) => state.leads.followups);
+  const [note, setNote] = useState('');
   const [isScheduled, setIsScheduled] = useState(false);
-  const label = { inputProps: { 'aria-label': 'Switch demo' } };
+  const [finalData, setFinalData] = useState([]); // ✅ API data
+    const API_URL = import.meta.env.VITE_API_URL;
+  const navigate = useNavigate();
 
-  // Handle the switch toggle to show date input
-  const handleSwitchChange = (event) => {
-    setIsScheduled(event.target.checked);
-  };
-
-  // Check authentication
+  // 🔐 Auth check
   useEffect(() => {
     const tokenId = localStorage.getItem('Token');
     if (!tokenId) {
@@ -36,20 +29,34 @@ function MissedLeads() {
     }
   }, [navigate]);
 
-  // Fetch follow-ups data
-  useEffect(() => {  
-    dispatch(fetchAllFollowUps());
-  }, [dispatch]);
+  // 🔥 FETCH MISSED LEADS FROM API
+  useEffect(() => {
+    const fetchMissedLeads = async () => {
+      try {
+        const empId = localStorage.getItem("employeeId");
 
-  // Process leads data
-  const today = new Date().toISOString().split("T")[0];
-  const leadFinaldata = followUps.followups?.filter((item) => 
-    item.nextFollowupDate?.split("T")[0] < today
-  );
-  const leadIds = leadFinaldata?.map((item) => item.leadId);
-  
-  // Filter finalData to show only closed leads (closed: true)
-  const finalData = leadIds?.filter((lead) => lead?.closed === false  && lead?.deleted===false) || [];
+        const res = await axios.get(
+          `${API_URL}/digicoder/crm/api/v1/lead/missed-leads/${empId}`
+        );
+
+        if (res.data.success) {
+          setFinalData(res.data.data);
+        }
+
+      } catch (error) {
+        console.error("Error fetching missed leads:", error);
+      }
+    };
+
+    fetchMissedLeads();
+  }, []);
+
+  // 🔘 Switch toggle
+  const handleSwitchChange = (event) => {
+    setIsScheduled(event.target.checked);
+  };
+
+  // 📂 Modal open/close
   const openModal = () => {
     setButtonTitle("Update Leads");
     setTitle("Update Leads");
@@ -60,6 +67,7 @@ function MissedLeads() {
     setIsModalOpen(false);
   };
 
+  // 📝 Sticky note handlers
   const handleNoteChange = (e) => {
     setStickyNote(e.target.value);
   };
@@ -78,74 +86,79 @@ function MissedLeads() {
     <div>
       <Dashboard active={'missedLead'}>
         <div className="content">
-          <>
-            {/* Table Section */}
-            <div className="missed-table-container">
-              <DynamicTable lead={finalData} TableTitle={tableTitle} />
-            </div>
-            <div className='missed-card-container'>
-              <DynamicCard leadCard={finalData} TableTitle={tableTitle}/> 
-            </div>
 
-            {/* Modal component */}
-            <Modal 
-              isOpen={isModalOpen} 
-              onClose={closeModal} 
-              title={title} 
-              buttonTitle={buttonTitle} 
-              leadData={leadData} 
-            />
+          {/* 🔥 TABLE */}
+          <div className="missed-table-container">
+            <DynamicTable lead={finalData} TableTitle={tableTitle} />
+          </div>
 
-            {/* Conditional rendering for sticky note */}
-            {isNoteVisible && (
-              <div className="sticky-note-container">
-                <textarea
-                  value={stickyNote}
-                  onChange={handleNoteChange}
-                  placeholder="Add a note..."
-                  className="sticky-note-textarea"
-                />
-                <div className="form-row">
-                  <label>
-                    Priority:
-                    <select name="priority" className="sticky-note-select">
-                      <option>Select</option>
-                      <option>High</option>
-                      <option>Medium</option>
-                      <option>Low</option>
-                    </select>
-                  </label>
+          {/* 🔥 CARD VIEW */}
+          <div className='missed-card-container'>
+            <DynamicCard leadCard={finalData} TableTitle={tableTitle}/> 
+          </div>
 
-                  <label>
-                    Sources:
-                    <select name="sources" className="sticky-note-select">
-                      <option>Select</option>
-                      <option>Social Media</option>
-                      <option>Posters</option>
-                      <option>Adds</option>
-                      <option>Referral</option>
-                    </select>
-                  </label>
-                </div>
-                <div>
-                  <input 
-                    type="checkbox" 
-                    onChange={handleSwitchChange} 
-                    checked={isScheduled}
-                  />
-                  <label>Set Reminder</label>
-                  {isScheduled && (
-                    <input type="date" className="date-input" />
-                  )}
-                </div>
+          {/* 📂 MODAL */}
+          <Modal 
+            isOpen={isModalOpen} 
+            onClose={closeModal} 
+            title={title} 
+            buttonTitle={buttonTitle} 
+            leadData={leadData} 
+          />
 
-                <div className="sticky-note-actions">
-                  <button onClick={cancelStickyNote} className="cancel-btn">Cancel</button>
-                  <button onClick={saveStickyNote} className="save-btn">Save</button>
-                </div>
+          {/* 📝 STICKY NOTE */}
+          {isNoteVisible && (
+            <div className="sticky-note-container">
+              <textarea
+                value={stickyNote}
+                onChange={handleNoteChange}
+                placeholder="Add a note..."
+                className="sticky-note-textarea"
+              />
+
+              <div className="form-row">
+                <label>
+                  Priority:
+                  <select name="priority" className="sticky-note-select">
+                    <option>Select</option>
+                    <option>High</option>
+                    <option>Medium</option>
+                    <option>Low</option>
+                  </select>
+                </label>
+
+                <label>
+                  Sources:
+                  <select name="sources" className="sticky-note-select">
+                    <option>Select</option>
+                    <option>Social Media</option>
+                    <option>Posters</option>
+                    <option>Adds</option>
+                    <option>Referral</option>
+                  </select>
+                </label>
               </div>
-            )}
-          </>
+
+              <div>
+                <input 
+                  type="checkbox" 
+                  onChange={handleSwitchChange} 
+                  checked={isScheduled}
+                />
+                <label>Set Reminder</label>
+
+                {isScheduled && (
+                  <input type="date" className="date-input" />
+                )}
+              </div>
+
+              <div className="sticky-note-actions">
+                <button onClick={cancelStickyNote} className="cancel-btn">Cancel</button>
+                <button onClick={saveStickyNote} className="save-btn">Save</button>
+              </div>
+            </div>
+          )}
+
         </div>
       </Dashboard>
     </div>

@@ -11,8 +11,6 @@ import { format } from 'timeago.js';
 import axios from 'axios';
 
 function DynamicCard({ leadCard, TableTitle, onFollowupAdded }) {
-  console.log(leadCard);
-
   // State variables
   const [searchParams, setSearchParams] = useSearchParams();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -362,7 +360,7 @@ function DynamicCard({ leadCard, TableTitle, onFollowupAdded }) {
                       <p>
                         <span className='card-heading'>Latest Followup:- </span>
                         <span>
-                          {lead?.latestFollowup?.[0]?.followupMessage || "No followup message"}
+                          {lead?.lastFollowup?.followupMessage || "No followup message"}
                         </span>
                       </p>
                       <p>

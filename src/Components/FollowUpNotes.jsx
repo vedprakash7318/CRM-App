@@ -18,7 +18,7 @@ function FollowUpNotes({ isOpenNote, oncloseNote, leadData, onFollowupAdded }) {
   const [message, setMessage] = useState("");
   const [service, setService] = useState("");
   const [status, setStatus] = useState("");
-  const [isScheduled, setIsScheduled] = useState(false);
+  const [isScheduled, setIsScheduled] = useState(true); // Changed to true by default
   const [reminder, setReminderDate] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -32,7 +32,7 @@ function FollowUpNotes({ isOpenNote, oncloseNote, leadData, onFollowupAdded }) {
     dispatch(fetchLeadStatus());
   }, [dispatch]);
 
-  // ================= AUTO-SELECT SERVICE & STATUS =================
+  // ================= AUTO-SELECT SERVICE & STATUS & SET DEFAULT REMINDER =================
   useEffect(() => {
     if (!isOpenNote || !leadData) return;
 
@@ -54,17 +54,23 @@ function FollowUpNotes({ isOpenNote, oncloseNote, leadData, onFollowupAdded }) {
       );
     }
 
+    // ✅ Set default reminder date to tomorrow
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    setReminderDate(tomorrow.toISOString().split('T')[0]);
+
     // Reset form when modal opens with new lead
     setMessage("");
-    setReminderDate("");
-    setIsScheduled(false);
+    setIsScheduled(true); // Keep reminder on by default
   }, [isOpenNote, leadData]);
 
   // ================= RESET =================
   const resetForm = () => {
     setMessage("");
-    setReminderDate("");
-    setIsScheduled(false);
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    setReminderDate(tomorrow.toISOString().split('T')[0]);
+    setIsScheduled(true);
     setIsLoading(false);
   };
 
@@ -76,6 +82,16 @@ function FollowUpNotes({ isOpenNote, oncloseNote, leadData, onFollowupAdded }) {
         severity: "warn",
         summary: "Required",
         detail: "Please enter follow-up message",
+        life: 3000,
+      });
+      return;
+    }
+
+    if (!service) {
+      toast.current.show({
+        severity: "warn",
+        summary: "Required",
+        detail: "Please select a service",
         life: 3000,
       });
       return;
@@ -95,7 +111,7 @@ function FollowUpNotes({ isOpenNote, oncloseNote, leadData, onFollowupAdded }) {
 
     try {
       const employeeId = localStorage.getItem("employeeId");
-      const token = localStorage.getItem("token"); // Agar token use hota hai to
+      const token = localStorage.getItem("token");
 
       const response = await axios.post(
         `${API_URL}/digicoder/crm/api/v1/followup/add/${leadData._id}`,
@@ -109,13 +125,11 @@ function FollowUpNotes({ isOpenNote, oncloseNote, leadData, onFollowupAdded }) {
         { 
           headers: { 
             "Content-Type": "application/json",
-            // "Authorization": `Bearer ${token}` // Agar authorization chahiye to
           } 
         }
       );
 
       if (response.data.success) {
-        // Success Toast
         toast.current.show({
           severity: "success",
           summary: "Success",
@@ -123,24 +137,12 @@ function FollowUpNotes({ isOpenNote, oncloseNote, leadData, onFollowupAdded }) {
           life: 2000,
         });
 
-        // 🔥 IMPORTANT: Parent component ko call karo refresh ke liye
         if (onFollowupAdded) {
-          onFollowupAdded(); // LeadPageCard mein fetchLeadsFromServer call hoga
+          onFollowupAdded();
         }
         
-        // Form reset karo
         resetForm();
-        
-        // 🔥 IMPORTANT: Modal close karo with true parameter indicating followup added
-        // Ab oncloseNote function ko call karo with true parameter
-        // Parent component (LeadPageCard) ko pata chalega ki followup add hua hai
-        oncloseNote(true); // <-- true bhej rahe hain
-        
-        // Agar parent oncloseNote true parameter nahi leta to ye alternative use karo:
-        // setTimeout(() => {
-        //   oncloseNote();
-        //   if (onFollowupAdded) onFollowupAdded();
-        // }, 100);
+        oncloseNote(true);
       }
     } catch (error) {
       console.error('Error saving follow-up:', error);
@@ -158,108 +160,156 @@ function FollowUpNotes({ isOpenNote, oncloseNote, leadData, onFollowupAdded }) {
   // ================= CANCEL =================
   const cancelStickyNote = () => {
     resetForm();
-    oncloseNote(false); // <-- false bhej rahe hain (followup add nahi hua)
+    oncloseNote(false);
   };
 
   // ================= UI =================
   return (
     <>
-      <Modal show={isOpenNote} onHide={cancelStickyNote} size="lg" centered backdrop="static">
-        <Modal.Header closeButton>
-          {/* <Modal.Title>
-            Follow Up Notes
-            {leadData?.name && <small style={{ marginLeft: '10px', color: '#666' }}> - {leadData.name}</small>}
-          </Modal.Title> */}
+      <Modal 
+        show={isOpenNote} 
+        onHide={cancelStickyNote} 
+        size="md" 
+        centered 
+        backdrop="static"
+        className="followup-modal"
+      >
+        <Modal.Header closeButton className="border-bottom-0 pb-0">
+          <Modal.Title className="fw-bold fs-5">
+            <i className="bi bi-pencil-square me-2" style={{ color: '#0d6efd' }}></i>
+            Add Follow-up for <span style={{ color: '#0d6efd' }}>{leadData?.name || 'Student'}</span>
+          </Modal.Title>
         </Modal.Header>
 
-        <Modal.Body>
-          {/* MESSAGE */}
-          <div className="form-group">
-            <label style={{ fontWeight: 'bold', marginBottom: '5px', display: 'block' }}>
-              Message <span style={{ color: 'red' }}>*</span>
+        <Modal.Body className="pt-2">
+          {/* SERVICE & STATUS - Moved to top */}
+          <div className="row g-3 mb-3">
+            <div className="col-md-6">
+              <div className="form-group">
+                <label className="form-label fw-semibold mb-1">
+                  Service <span className="text-danger">*</span>
+                </label>
+                <select
+                  className="form-select"
+                  value={service}
+                  onChange={(e) => setService(e.target.value)}
+                  style={{ 
+                    borderRadius: '8px',
+                    borderColor: service ? '#0d6efd' : '#dee2e6',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <option value="">Select Service</option>
+                  {servicesData?.map((s) => (
+                    <option key={s._id} value={s._id}>
+                      {s.servicesText}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="col-md-6">
+              <div className="form-group">
+                <label className="form-label fw-semibold mb-1">Status <span className="text-danger">*</span></label>
+                <select
+                  className="form-select"
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value)}
+                  style={{ 
+                    borderRadius: '8px',
+                    borderColor: status ? '#0d6efd' : '#dee2e6',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <option value="">Select Status</option>
+                  {leadStatusData?.map((s) => (
+                    <option key={s._id} value={s._id}>
+                      {s.leadStatusText}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* MESSAGE - Smaller textarea */}
+          <div className="form-group mb-3">
+            <label className="form-label fw-semibold mb-1">
+              Message <span className="text-danger">*</span>
             </label>
             <textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              placeholder="Add a note..."
-              className="sticky-note-textarea"
-              rows="4"
-              style={{ width: '100%', padding: '10px', borderRadius: '5px', border: '1px solid #ddd' }}
+              placeholder="Add your follow-up notes here..."
+              className="form-control"
+              rows="3"
+              style={{ 
+                width: '100%', 
+                padding: '10px', 
+                borderRadius: '8px',
+                borderColor: message ? '#0d6efd' : '#dee2e6',
+                resize: 'vertical',
+                fontSize: '0.95rem',
+                transition: 'all 0.2s'
+              }}
               autoFocus
             />
           </div>
 
-          {/* SERVICE & STATUS */}
-          <div className="form-row-notes" style={{ display: 'flex', gap: '20px', marginTop: '15px' }}>
-            <div className="form-group" style={{ flex: 1 }}>
-              <label style={{ fontWeight: 'bold', marginBottom: '5px', display: 'block' }}>Service</label>
-              <select
-                className="sticky-note-select"
-                value={service}
-                onChange={(e) => setService(e.target.value)}
-                style={{ width: '100%', padding: '8px', borderRadius: '5px', border: '1px solid #ddd' }}
-              >
-                <option value="">Select Service</option>
-                {servicesData?.map((s) => (
-                  <option key={s._id} value={s._id}>
-                    {s.servicesText}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="form-group" style={{ flex: 1 }}>
-              <label style={{ fontWeight: 'bold', marginBottom: '5px', display: 'block' }}>Status</label>
-              <select
-                className="sticky-note-select"
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
-                style={{ width: '100%', padding: '8px', borderRadius: '5px', border: '1px solid #ddd' }}
-              >
-                <option value="">Select Status</option>
-                {leadStatusData?.map((s) => (
-                  <option key={s._id} value={s._id}>
-                    {s.leadStatusText}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
           {/* REMINDER */}
-          <div className="form-group reminder-switch" style={{ marginTop: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <Switch
-              checked={isScheduled}
-              onChange={(e) => setIsScheduled(e.target.checked)}
-              color="primary"
-            />
-            <label style={{ fontWeight: 'bold' }}>Set Reminder</label>
+          <div className="form-group">
+            <div className="d-flex align-items-center flex-wrap gap-3">
+              <div className="d-flex align-items-center">
+                <Switch
+                  checked={isScheduled}
+                  onChange={(e) => setIsScheduled(e.target.checked)}
+                  color="primary"
+                  size="small"
+                />
+                <span className="fw-semibold ms-1">Set Reminder</span>
+              </div>
 
-            {isScheduled && (
-              <input
-                type="date"
-                className="date-input"
-                value={reminder}
-                onChange={(e) => setReminderDate(e.target.value)}
-                min={new Date().toISOString().split('T')[0]}
-                style={{ marginLeft: '10px', padding: '5px', borderRadius: '5px', border: '1px solid #ddd' }}
-                required={isScheduled}
-              />
-            )}
+              {isScheduled && (
+                <div className="d-flex align-items-center flex-grow-1">
+                  <i className="bi bi-calendar3 me-2 text-primary"></i>
+                  <input
+                    type="date"
+                    className="form-control form-control-sm"
+                    value={reminder}
+                    onChange={(e) => setReminderDate(e.target.value)}
+                    min={new Date().toISOString().split('T')[0]}
+                    style={{ 
+                      maxWidth: '200px',
+                      borderRadius: '6px'
+                    }}
+                    required={isScheduled}
+                  />
+                </div>
+              )}
+            </div>
           </div>
-          
-        
         </Modal.Body>
 
-        <Modal.Footer>
-          <Button variant="secondary" onClick={cancelStickyNote} disabled={isLoading}>
+        <Modal.Footer className="border-top-0 pt-0">
+          <Button 
+            variant="outline-secondary" 
+            onClick={cancelStickyNote} 
+            disabled={isLoading}
+            className="px-4"
+          >
             Cancel
           </Button>
           <Button
             variant="primary"
             onClick={saveStickyNote}
-            disabled={isLoading || !message.trim()}
-            style={{ minWidth: '100px' }}
+            disabled={isLoading || !message.trim() || !service}
+            className="px-4"
+            style={{
+              backgroundColor: '#0d6efd',
+              borderColor: '#0d6efd',
+              minWidth: '120px'
+            }}
           >
             {isLoading ? (
               <>
@@ -267,7 +317,10 @@ function FollowUpNotes({ isOpenNote, oncloseNote, leadData, onFollowupAdded }) {
                 Saving...
               </>
             ) : (
-              "Save Follow-up"
+              <>
+                <i className="bi bi-check2-circle me-2"></i>
+                Save Follow-up
+              </>
             )}
           </Button>
         </Modal.Footer>

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import '../Components/CSS/DynamicCard.css';
 import FollowUpNotes from '../Components/FollowUpNotes';
 import Modal from '../Components/LeadForm';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { MultiSelect } from 'primereact/multiselect';
 import { ClipLoader } from 'react-spinners';
 import { useSelector, useDispatch } from 'react-redux';
@@ -11,128 +11,66 @@ import { format } from 'timeago.js';
 import axios from 'axios';
 
 function PendingLeadCardPage({ TableTitle }) {
-  // State variables
-  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const tagData = useSelector((state) => state.leads.tag);
+  const employeeId = localStorage.getItem("employeeId");
+  const STORAGE_KEY = `pending_card_state_${employeeId}`;
+
+  const saveState = (state) => {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}
+  };
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [noteOpen, setNoteOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [isEditMode, setEditMode] = useState(false);
   const [buttonTitle, setButtonTitle] = useState('');
   const [leadData, setLeadData] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY))?.search || ''; } catch { return ''; }
+  });
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY))?.search || ''; } catch { return ''; }
+  });
   const [loading, setLoading] = useState(true);
   const [tagSearchQuery, setTagSearchQuery] = useState('');
   const [statusOptions, setStatusOptions] = useState([]);
   const [serviceOptions, setServiceOptions] = useState([]);
-  
-  // New state for server-side data
   const [serverLeads, setServerLeads] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
   const [totalRecords, setTotalRecords] = useState(0);
   const [serverLoading, setServerLoading] = useState(false);
-  
-  // New state for filter modal
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
-
-  // Ref for container
-  const containerRef = useRef(null);
-
-  // Constants
-  const itemsPerPage = 5;
-  const navigate = useNavigate();
-  const dispatch = useDispatch();
-  const tagData = useSelector((state) => state.leads.tag);
-
-  // Get employeeId from URL params
-  const employeeId = localStorage.getItem("employeeId");
-
-  // Initialize current page - with localStorage persistence
   const [currentPage, setCurrentPage] = useState(() => {
-    // First check URL params
-    const pageFromUrl = parseInt(searchParams.get('page'));
-    if (pageFromUrl && !isNaN(pageFromUrl)) {
-      return pageFromUrl;
-    }
-    // Then check localStorage
-    const savedPage = localStorage.getItem('currentPendingLeadPage');
-    if (savedPage) {
-      return parseInt(savedPage);
-    }
-    // Default to page 1
-    return 1;
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY))?.currentPage || 1; } catch { return 1; }
   });
-
-  // Initialize selected tags
   const [selectedTagValues, setSelectedTagValues] = useState(() => {
-    const savedTags = localStorage.getItem('selectedPendingTagFilters');
-    return savedTags ? JSON.parse(savedTags) : [];
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY))?.tags || []; } catch { return []; }
   });
-
-  // Initialize selected services
   const [selectedServiceValues, setSelectedServiceValues] = useState(() => {
-    const savedServices = localStorage.getItem('selectedPendingServiceFilters');
-    return savedServices ? JSON.parse(savedServices) : [];
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY))?.services || []; } catch { return []; }
   });
-
-  // Initialize selected status
   const [selectedStatusValues, setSelectedStatusValues] = useState(() => {
-    const savedStatus = localStorage.getItem('selectedPendingStatusFilters');
-    return savedStatus ? JSON.parse(savedStatus) : [];
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY))?.status || []; } catch { return []; }
   });
 
-  // Track previous filter values to detect actual changes
-  const prevFilters = useRef({
-    search: debouncedSearchQuery,
-    tags: selectedTagValues,
-    status: selectedStatusValues,
-    services: selectedServiceValues
-  });
+  const containerRef = useRef(null);
+  const itemsPerPage = 5;
+  const isFilterChange = useRef(false);
 
-  // Track if this is the initial mount
-  const isInitialMount = useRef(true);
-  // Track if we've already fetched data after mount
-  const hasFetchedAfterMount = useRef(false);
-
-  // Initialize search query from localStorage
+  // Save state whenever these values change
   useEffect(() => {
-    const savedSearch = localStorage.getItem('pendingLeadSearchQuery');
-    if (savedSearch) {
-      setSearchQuery(savedSearch);
-    }
-  }, []);
+    saveState({ currentPage, search: searchQuery, tags: selectedTagValues, status: selectedStatusValues, services: selectedServiceValues });
+  }, [currentPage, searchQuery, selectedTagValues, selectedStatusValues, selectedServiceValues]);
 
-  // Effects
-  useEffect(() => {
-    searchParams.set('page', currentPage.toString());
-    setSearchParams(searchParams);
-    localStorage.setItem('currentPendingLeadPage', currentPage.toString());
-  }, [currentPage, setSearchParams, searchParams]);
+  useEffect(() => { dispatch(fetchTags()); }, [dispatch]);
 
-  // Debounce search query and save to localStorage
+  // Debounce search
   useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedSearchQuery(searchQuery);
-      localStorage.setItem('pendingLeadSearchQuery', searchQuery);
-    }, 500);
+    const handler = setTimeout(() => setDebouncedSearchQuery(searchQuery), 500);
     return () => clearTimeout(handler);
   }, [searchQuery]);
-
-  useEffect(() => {
-    dispatch(fetchTags());
-  }, [dispatch]);
-
-  useEffect(() => {
-    localStorage.setItem('selectedPendingTagFilters', JSON.stringify(selectedTagValues));
-  }, [selectedTagValues]);
-
-  useEffect(() => {
-    localStorage.setItem('selectedPendingServiceFilters', JSON.stringify(selectedServiceValues));
-  }, [selectedServiceValues]);
-
-  useEffect(() => {
-    localStorage.setItem('selectedPendingStatusFilters', JSON.stringify(selectedStatusValues));
-  }, [selectedStatusValues]);
 
   // Fetch statuses from API
   useEffect(() => {
@@ -148,7 +86,7 @@ function PendingLeadCardPage({ TableTitle }) {
           value: status._id
         })));
       } catch (error) {
-        console.error('Error fetching statuses:', error);
+        // console.error('Error fetching statuses:', error);
       }
     };
     fetchStatuses();
@@ -174,50 +112,29 @@ function PendingLeadCardPage({ TableTitle }) {
     fetchServices();
   }, []);
 
-  // ============================================
-  // 🔥 SERVER-SIDE DATA FETCHING
-  // ============================================
   const fetchLeadsFromServer = useCallback(async () => {
-    if (!employeeId) {
-      console.error('No employee ID found');
-      return;
-    }
-
+    if (!employeeId) return;
     setServerLoading(true);
     try {
       const APi_Url = import.meta.env.VITE_API_URL;
-      
-      // Build query params
       const params = new URLSearchParams();
       params.append('page', currentPage);
       params.append('limit', itemsPerPage);
-      
-      if (debouncedSearchQuery) {
-        params.append('search', debouncedSearchQuery);
-      }
-      
-      if (selectedTagValues.length > 0) {
-        params.append('tags', selectedTagValues.join(','));
-      }
-      
-      if (selectedStatusValues.length > 0) {
-        params.append('status', selectedStatusValues.join(','));
-      }
-      
-      if (selectedServiceValues.length > 0) {
-        params.append('service', selectedServiceValues.join(','));
-      }
+      if (debouncedSearchQuery) params.append('search', debouncedSearchQuery);
+      if (selectedTagValues.length > 0) params.append('tags', selectedTagValues.join(','));
+      if (selectedStatusValues.length > 0) params.append('status', selectedStatusValues.join(','));
+      if (selectedServiceValues.length > 0) params.append('service', selectedServiceValues.join(','));
 
       const response = await axios.get(
         `${APi_Url}/digicoder/crm/api/v1/lead/pendingleads/${employeeId}?${params.toString()}`
       );
-      console.log(response);
-      
       if (response.data.success) {
         setServerLeads(response.data.leads || []);
         setTotalPages(response.data.pagination.totalPages || 1);
         setTotalRecords(response.data.pagination.totalRecords || 0);
       }
+      console.log();
+      
     } catch (error) {
       console.error('Error fetching leads:', error);
       setServerLeads([]);
@@ -225,68 +142,31 @@ function PendingLeadCardPage({ TableTitle }) {
     } finally {
       setServerLoading(false);
       setLoading(false);
+      hasFetched.current = true;
     }
   }, [employeeId, currentPage, debouncedSearchQuery, selectedTagValues, selectedStatusValues, selectedServiceValues]);
 
-  // Effect for filter changes - only reset page when filters actually change
+  // When filters change → reset to page 1
   useEffect(() => {
-    // Skip the first run when component mounts
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      
-      // After initial mount, fetch data with restored filters and page
-      // But only do this once
-      if (!hasFetchedAfterMount.current) {
-        hasFetchedAfterMount.current = true;
-        fetchLeadsFromServer();
+    if (isFilterChange.current) {
+      isFilterChange.current = false;
+      if (currentPage !== 1) {
+        setCurrentPage(1);
+        return;
       }
-      return;
     }
-    
-    // Check if filters actually changed (deep comparison)
-    const filtersChanged = 
-      prevFilters.current.search !== debouncedSearchQuery ||
-      JSON.stringify(prevFilters.current.tags) !== JSON.stringify(selectedTagValues) ||
-      JSON.stringify(prevFilters.current.status) !== JSON.stringify(selectedStatusValues) ||
-      JSON.stringify(prevFilters.current.services) !== JSON.stringify(selectedServiceValues);
-    
-    // Store current values for next comparison
-    prevFilters.current = {
-      search: debouncedSearchQuery,
-      tags: [...selectedTagValues],
-      status: [...selectedStatusValues],
-      services: [...selectedServiceValues]
-    };
-    
-    // Only reset to page 1 if filters actually changed by user
-    if (filtersChanged) {
-      setCurrentPage(1);
-    } else {
-      // If filters didn't change, fetch data with current page
-      fetchLeadsFromServer();
-    }
-  }, [debouncedSearchQuery, selectedTagValues, selectedStatusValues, selectedServiceValues]);
+    fetchLeadsFromServer();
+  }, [debouncedSearchQuery, selectedTagValues, selectedStatusValues, selectedServiceValues, currentPage]);
 
-  // Effect for page changes - fetch data when page changes
+  // Adjust page if invalid after data loads - only after first fetch
+  const hasFetched = useRef(false);
   useEffect(() => {
-    // Don't fetch on initial mount as it's already handled
-    if (!isInitialMount.current && hasFetchedAfterMount.current) {
-      fetchLeadsFromServer();
-    }
-  }, [currentPage]);
-
-  // Only adjust page if we're on an invalid page after data loads
-  useEffect(() => {
-    if (!serverLoading && totalPages > 0 && currentPage > totalPages) {
+    if (hasFetched.current && !serverLoading && totalPages > 0 && currentPage > totalPages) {
       setCurrentPage(totalPages);
     }
-  }, [totalPages, currentPage, serverLoading]);
+  }, [totalPages, serverLoading]);
 
-  // Add this function to handle follow-up added
-  const handleFollowupAdded = useCallback(() => {
-    // Refresh the leads data
-    fetchLeadsFromServer();
-  }, [fetchLeadsFromServer]);
+  const handleFollowupAdded = useCallback(() => { fetchLeadsFromServer(); }, [fetchLeadsFromServer]);
 
   // Memoized values
   const tagsOptions = useMemo(() => {
@@ -295,16 +175,11 @@ function PendingLeadCardPage({ TableTitle }) {
       .map(tag => ({ name: tag.tagName, value: tag.tagName }));
   }, [tagData, tagSearchQuery]);
 
-  // No client-side filtering needed anymore
   const filteredLeads = serverLeads;
 
-  // Event handlers
   const handlePageChange = (pageNumber) => {
     if (pageNumber >= 1 && pageNumber <= totalPages) {
       setCurrentPage(pageNumber);
-      // Save to localStorage
-      localStorage.setItem('currentPendingLeadPage', pageNumber.toString());
-      // Don't fetch here - let the useEffect handle it
     }
   };
 
@@ -340,6 +215,7 @@ function PendingLeadCardPage({ TableTitle }) {
   };
 
   const handleSearchChange = (event) => {
+    isFilterChange.current = true;
     setSearchQuery(event.target.value);
   };
 
@@ -361,11 +237,12 @@ function PendingLeadCardPage({ TableTitle }) {
   };
 
   const clearAllFilters = () => {
+    isFilterChange.current = true;
     setSelectedServiceValues([]);
     setSelectedStatusValues([]);
     setSelectedTagValues([]);
-    setSearchQuery(''); // Clear search query
-    localStorage.removeItem('pendingLeadSearchQuery'); // Remove from localStorage
+    setSearchQuery('');
+    localStorage.removeItem(STORAGE_KEY);
     closeFilterModal();
   };
 
@@ -602,42 +479,14 @@ function PendingLeadCardPage({ TableTitle }) {
             </div>
             
             <div className="filter-modal-body">
-              {/* Service Filter */}
-              <div className="filter-section">
-                <label>Service</label>
-                <MultiSelect
-                  value={selectedServiceValues}
-                  options={serviceOptions}
-                  optionLabel="name"
-                  onChange={(e) => setSelectedServiceValues(e.value)}
-                  placeholder="Filter by Service"
-                  className="custom-input custom-multiselect"
-                  display="chip"
-                />
-              </div>
-
-              {/* Status Filter */}
-              <div className="filter-section">
-                <label>Status</label>
-                <MultiSelect
-                  value={selectedStatusValues}
-                  options={statusOptions}
-                  optionLabel="name"
-                  onChange={(e) => setSelectedStatusValues(e.value)}
-                  placeholder="Filter by Status"
-                  className="custom-input custom-multiselect"
-                  display="chip"
-                />
-              </div>
-
-              {/* Tag Filter */}
+                {/* Tag Filter */}
               <div className="filter-section">
                 <label>Tags</label>
                 <MultiSelect
                   value={selectedTagValues}
                   options={tagsOptions}
                   optionLabel="name"
-                  onChange={(e) => setSelectedTagValues(e.value)}
+                  onChange={(e) => { isFilterChange.current = true; setSelectedTagValues(e.value); }}
                   placeholder="Filter by Tags"
                   className="custom-input custom-multiselect"
                   display="chip"
@@ -646,6 +495,37 @@ function PendingLeadCardPage({ TableTitle }) {
                   onFilter={(e) => setTagSearchQuery(e.filter)}
                 />
               </div>
+                 {/* Status Filter */}
+              <div className="filter-section">
+                <label>Status</label>
+                <MultiSelect
+                  value={selectedStatusValues}
+                  options={statusOptions}
+                  optionLabel="name"
+                  onChange={(e) => { isFilterChange.current = true; setSelectedStatusValues(e.value); }}
+                  placeholder="Filter by Status"
+                  className="custom-input custom-multiselect"
+                  display="chip"
+                />
+              </div>
+
+
+              {/* Service Filter */}
+              <div className="filter-section">
+                <label>Service</label>
+                <MultiSelect
+                  value={selectedServiceValues}
+                  options={serviceOptions}
+                  optionLabel="name"
+                  onChange={(e) => { isFilterChange.current = true; setSelectedServiceValues(e.value); }}
+                  placeholder="Filter by Service"
+                  className="custom-input custom-multiselect"
+                  display="chip"
+                />
+              </div>
+
+           
+            
             </div>
 
             <div className="filter-modal-footer">

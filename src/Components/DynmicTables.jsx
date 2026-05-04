@@ -13,7 +13,6 @@ import './CSS/DynamicTable.css'
 export default function DynamicTable({ lead, TableTitle }) {
     const APi_Url = import.meta.env.VITE_API_URL;
     const navigate = useNavigate();
-    
     // State management
     const [showBtn, setShowBtn] = useState(true);
     const [noteOpen, setNoteOpen] = useState(false);

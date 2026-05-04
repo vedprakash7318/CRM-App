@@ -777,7 +777,7 @@ function FullLeads() {
                           <div className="followup-srNo">{followUps.length - index}</div>
                           <div>
                             <span className="cratedBy">Created Date-</span> <span className="cratedBy">{followUp.createdAt.split("T")[0]}</span>
-                            <div style={{ marginTop: "5px" }}><span className="cratedBy">Created By-</span> <span className="cratedBy">{followUp.followedBy.empName}</span></div>
+                            <div style={{ marginTop: "5px" }}><span className="cratedBy">Created By-</span> <span className="cratedBy">{followUp.followedBy?.empName}</span></div>
                           </div>
                         </div>
                         <div className="follow-ups-txt">
