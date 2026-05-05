@@ -633,35 +633,8 @@ function LeadPageCard({ TableTitle, onFollowupAdded }) {
             </div>
             
             <div className="filter-modal-body">
-              {/* Service Filter */}
-              <div className="filter-section">
-                <label>Service</label>
-                <MultiSelect
-                  value={selectedServiceValues}
-                  options={serviceOptions}
-                  optionLabel="name"
-                  onChange={(e) => setSelectedServiceValues(e.value)}
-                  placeholder="Filter by Service"
-                  className="custom-input custom-multiselect"
-                  display="chip"
-                />
-              </div>
 
-              {/* Status Filter */}
-              <div className="filter-section">
-                <label>Status</label>
-                <MultiSelect
-                  value={selectedStatusValues}
-                  options={statusOptions}
-                  optionLabel="name"
-                  onChange={(e) => setSelectedStatusValues(e.value)}
-                  placeholder="Filter by Status"
-                  className="custom-input custom-multiselect"
-                  display="chip"
-                />
-              </div>
-
-              {/* Tag Filter */}
+                {/* Tag Filter */}
               <div className="filter-section">
                 <label>Tags</label>
                 <MultiSelect
@@ -677,13 +650,46 @@ function LeadPageCard({ TableTitle, onFollowupAdded }) {
                   onFilter={(e) => setTagSearchQuery(e.filter)}
                 />
               </div>
+
+
+
+              {/* Status Filter */}
+              <div className="filter-section">
+                <label>Status</label>
+                <MultiSelect
+                  value={selectedStatusValues}
+                  options={statusOptions}
+                  optionLabel="name"
+                  onChange={(e) => setSelectedStatusValues(e.value)}
+                  placeholder="Filter by Status"
+                  className="custom-input custom-multiselect"
+                  display="chip"
+                />
+              </div>
+
+              
+              {/* Service Filter */}
+              <div className="filter-section">
+                <label>Service</label>
+                <MultiSelect
+                  value={selectedServiceValues}
+                  options={serviceOptions}
+                  optionLabel="name"
+                  onChange={(e) => setSelectedServiceValues(e.value)}
+                  placeholder="Filter by Service"
+                  className="custom-input custom-multiselect"
+                  display="chip"
+                />
+              </div>
+
+          
             </div>
 
             <div className="filter-modal-footer">
-              <button className="apply-filters-btn" onClick={applyFilters}>
+              {/* <button className="apply-filters-btn" onClick={applyFilters}>
                 Apply Filters
-              </button>
-              <button className="clear-all-btn" onClick={clearAllFilters}>
+              </button> */}
+              <button className="apply-filters-btn" onClick={clearAllFilters}>
                 Clear All Filters
               </button>
             </div>

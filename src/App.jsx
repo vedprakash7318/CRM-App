@@ -39,7 +39,7 @@ function App() {
           <Route path='/main' element={<MainDashboard/>}/>
           <Route  path='/leads' element={<Leads/>}/>
           <Route  path='/missedLeads' element={<MissedLeads/>}/>
-          <Route  path='/todayRminders' element={<Reminders/>}/>
+          <Route  path='/todayReminders' element={<Reminders/>}/>
           <Route  path='/report' element={<Report/>}/>
           <Route  path='/DynamicTable' element={<DynamicTable/>}/>
           <Route  path='/profile' element={<Profile/>}/>

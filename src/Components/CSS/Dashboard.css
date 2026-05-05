@@ -5,6 +5,25 @@
   display: flex;
 }
 
+
+.mobile-close-btn {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  color: #ffffff;
+  transition: all 0.3s ease;
+  position: absolute;
+  background: linear-gradient(45deg,#3b82f6,#8b5cf6);
+  top: 10px;
+  right: 15px;
+}
+
+.mobile-close-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
 /* Overlay */
 .overlay {
   position: fixed;
@@ -552,6 +571,16 @@ a.active .nav-btn,
   .title {
     font-size: 1.25rem;
   }
+   .mobile-close-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  /* Optional: Add animation for close button */
+  .mobile-close-btn:hover {
+    transform: scale(1.1);
+  }
 }
 
 /* Mobile Responsive (max-width: 768px) */
@@ -599,11 +628,21 @@ a.active .nav-btn,
   }
 
   .sidebar.open {
-    width: 280px;
+    width: 100%;
   }
   
   .sidebar.closed {
     width: 0;
+  }
+   .mobile-close-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  /* Optional: Add animation for close button */
+  .mobile-close-btn:hover {
+    transform: scale(1.1);
   }
 }
 
@@ -625,7 +664,7 @@ a.active .nav-btn,
   }
 
   .sidebar.open {
-    width: 240px;
+    width: 100%;
   }
 
   .logo-icon {
@@ -651,6 +690,16 @@ a.active .nav-btn,
   .dropdown-menu li {
     padding: 0.65rem 0.85rem;
     font-size: 0.8rem;
+  }
+   .mobile-close-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  /* Optional: Add animation for close button */
+  .mobile-close-btn:hover {
+    transform: scale(1.1);
   }
 }
 
@@ -684,3 +733,4 @@ a {
 .sidebar.closed .nav-btn.has-sub .dropdown-arrow {
   display: none;
 }
+

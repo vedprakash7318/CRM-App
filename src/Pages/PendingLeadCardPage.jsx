@@ -18,7 +18,7 @@ function PendingLeadCardPage({ TableTitle }) {
   const STORAGE_KEY = `pending_card_state_${employeeId}`;
 
   const saveState = (state) => {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch { }
   };
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -34,7 +34,6 @@ function PendingLeadCardPage({ TableTitle }) {
     try { return JSON.parse(localStorage.getItem(STORAGE_KEY))?.search || ''; } catch { return ''; }
   });
   const [loading, setLoading] = useState(true);
-  const [tagSearchQuery, setTagSearchQuery] = useState('');
   const [statusOptions, setStatusOptions] = useState([]);
   const [serviceOptions, setServiceOptions] = useState([]);
   const [serverLeads, setServerLeads] = useState([]);
@@ -45,24 +44,32 @@ function PendingLeadCardPage({ TableTitle }) {
   const [currentPage, setCurrentPage] = useState(() => {
     try { return JSON.parse(localStorage.getItem(STORAGE_KEY))?.currentPage || 1; } catch { return 1; }
   });
-  const [selectedTagValues, setSelectedTagValues] = useState(() => {
+  
+  // Store IDs instead of names
+  const [selectedTagIds, setSelectedTagIds] = useState(() => {
     try { return JSON.parse(localStorage.getItem(STORAGE_KEY))?.tags || []; } catch { return []; }
   });
-  const [selectedServiceValues, setSelectedServiceValues] = useState(() => {
+  const [selectedServiceIds, setSelectedServiceIds] = useState(() => {
     try { return JSON.parse(localStorage.getItem(STORAGE_KEY))?.services || []; } catch { return []; }
   });
-  const [selectedStatusValues, setSelectedStatusValues] = useState(() => {
+  const [selectedStatusIds, setSelectedStatusIds] = useState(() => {
     try { return JSON.parse(localStorage.getItem(STORAGE_KEY))?.status || []; } catch { return []; }
   });
 
   const containerRef = useRef(null);
-  const itemsPerPage = 5;
+  const itemsPerPage = 10;
   const isFilterChange = useRef(false);
 
-  // Save state whenever these values change
+  // Save state
   useEffect(() => {
-    saveState({ currentPage, search: searchQuery, tags: selectedTagValues, status: selectedStatusValues, services: selectedServiceValues });
-  }, [currentPage, searchQuery, selectedTagValues, selectedStatusValues, selectedServiceValues]);
+    saveState({ 
+      currentPage, 
+      search: searchQuery, 
+      tags: selectedTagIds, 
+      status: selectedStatusIds, 
+      services: selectedServiceIds 
+    });
+  }, [currentPage, searchQuery, selectedTagIds, selectedStatusIds, selectedServiceIds]);
 
   useEffect(() => { dispatch(fetchTags()); }, [dispatch]);
 
@@ -83,10 +90,11 @@ function PendingLeadCardPage({ TableTitle }) {
         const statuses = response.data.leadStatus || [];
         setStatusOptions(statuses.map(status => ({
           name: status.leadStatusText,
-          value: status._id
+          value: status._id // Store ID
         })));
+
       } catch (error) {
-        // console.error('Error fetching statuses:', error);
+        console.error('Error fetching statuses:', error);
       }
     };
     fetchStatuses();
@@ -103,7 +111,7 @@ function PendingLeadCardPage({ TableTitle }) {
         const services = response.data.services || [];
         setServiceOptions(services.map(service => ({
           name: service.servicesText,
-          value: service._id
+          value: service._id // Store ID
         })));
       } catch (error) {
         console.error('Error fetching services:', error);
@@ -111,6 +119,14 @@ function PendingLeadCardPage({ TableTitle }) {
     };
     fetchServices();
   }, []);
+
+  // Tag options with IDs
+  const tagsOptions = useMemo(() => {
+    return tagData.map(tag => ({ 
+      name: tag.tagName, 
+      value: tag._id // Store ID
+    }));
+  }, [tagData]);
 
   const fetchLeadsFromServer = useCallback(async () => {
     if (!employeeId) return;
@@ -121,9 +137,9 @@ function PendingLeadCardPage({ TableTitle }) {
       params.append('page', currentPage);
       params.append('limit', itemsPerPage);
       if (debouncedSearchQuery) params.append('search', debouncedSearchQuery);
-      if (selectedTagValues.length > 0) params.append('tags', selectedTagValues.join(','));
-      if (selectedStatusValues.length > 0) params.append('status', selectedStatusValues.join(','));
-      if (selectedServiceValues.length > 0) params.append('service', selectedServiceValues.join(','));
+      if (selectedTagIds.length > 0) params.append('tags', selectedTagIds.join(','));
+      if (selectedStatusIds.length > 0) params.append('status', selectedStatusIds.join(','));
+      if (selectedServiceIds.length > 0) params.append('service', selectedServiceIds.join(','));
 
       const response = await axios.get(
         `${APi_Url}/digicoder/crm/api/v1/lead/pendingleads/${employeeId}?${params.toString()}`
@@ -133,10 +149,9 @@ function PendingLeadCardPage({ TableTitle }) {
         setTotalPages(response.data.pagination.totalPages || 1);
         setTotalRecords(response.data.pagination.totalRecords || 0);
       }
-      console.log();
       
     } catch (error) {
-      console.error('Error fetching leads:', error);
+      // console.error('Error fetching leads:', error);
       setServerLeads([]);
       setTotalPages(1);
     } finally {
@@ -144,7 +159,7 @@ function PendingLeadCardPage({ TableTitle }) {
       setLoading(false);
       hasFetched.current = true;
     }
-  }, [employeeId, currentPage, debouncedSearchQuery, selectedTagValues, selectedStatusValues, selectedServiceValues]);
+  }, [employeeId, currentPage, debouncedSearchQuery, selectedTagIds, selectedStatusIds, selectedServiceIds]);
 
   // When filters change → reset to page 1
   useEffect(() => {
@@ -156,9 +171,8 @@ function PendingLeadCardPage({ TableTitle }) {
       }
     }
     fetchLeadsFromServer();
-  }, [debouncedSearchQuery, selectedTagValues, selectedStatusValues, selectedServiceValues, currentPage]);
+  }, [debouncedSearchQuery, selectedTagIds, selectedStatusIds, selectedServiceIds, currentPage, fetchLeadsFromServer]);
 
-  // Adjust page if invalid after data loads - only after first fetch
   const hasFetched = useRef(false);
   useEffect(() => {
     if (hasFetched.current && !serverLoading && totalPages > 0 && currentPage > totalPages) {
@@ -168,20 +182,20 @@ function PendingLeadCardPage({ TableTitle }) {
 
   const handleFollowupAdded = useCallback(() => { fetchLeadsFromServer(); }, [fetchLeadsFromServer]);
 
-  // Memoized values
-  const tagsOptions = useMemo(() => {
-    return tagData
-      .filter(tag => tag.tagName.toLowerCase().includes(tagSearchQuery.toLowerCase()))
-      .map(tag => ({ name: tag.tagName, value: tag.tagName }));
-  }, [tagData, tagSearchQuery]);
-
-  const filteredLeads = serverLeads;
-
   const handlePageChange = (pageNumber) => {
     if (pageNumber >= 1 && pageNumber <= totalPages) {
       setCurrentPage(pageNumber);
     }
   };
+
+  useEffect(() => {
+    setTimeout(() => {
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth',
+      });
+    }, 100);
+  }, [currentPage]);
 
   const openModal = (isEdit) => {
     setEditMode(isEdit);
@@ -219,11 +233,6 @@ function PendingLeadCardPage({ TableTitle }) {
     setSearchQuery(event.target.value);
   };
 
-  const handleTagSearchChange = (event) => {
-    setTagSearchQuery(event.target.value);
-  };
-
-  // Filter modal functions
   const openFilterModal = () => {
     setIsFilterModalOpen(true);
   };
@@ -232,21 +241,16 @@ function PendingLeadCardPage({ TableTitle }) {
     setIsFilterModalOpen(false);
   };
 
-  const applyFilters = () => {
-    closeFilterModal();
-  };
-
   const clearAllFilters = () => {
     isFilterChange.current = true;
-    setSelectedServiceValues([]);
-    setSelectedStatusValues([]);
-    setSelectedTagValues([]);
+    setSelectedServiceIds([]);
+    setSelectedStatusIds([]);
+    setSelectedTagIds([]);
     setSearchQuery('');
     localStorage.removeItem(STORAGE_KEY);
     closeFilterModal();
   };
 
-  // Render loading state
   if (loading && serverLoading) {
     return (
       <div className="dynamic-card-outer">
@@ -276,13 +280,13 @@ function PendingLeadCardPage({ TableTitle }) {
         <div className="filter-button-wrapper">
           <button className="filter-toggle-btn" onClick={openFilterModal}>
             <i className="ri-filter-3-fill"></i> Filters
-            {(selectedServiceValues.length > 0 || selectedStatusValues.length > 0 || 
-              selectedTagValues.length > 0) && (
-              <span className="filter-badge">
-                {selectedServiceValues.length + selectedStatusValues.length + 
-                 selectedTagValues.length}
-              </span>
-            )}
+            {(selectedServiceIds.length > 0 || selectedStatusIds.length > 0 ||
+              selectedTagIds.length > 0) && (
+                <span className="filter-badge">
+                  {selectedServiceIds.length + selectedStatusIds.length +
+                    selectedTagIds.length}
+                </span>
+              )}
           </button>
         </div>
       </div>
@@ -290,9 +294,9 @@ function PendingLeadCardPage({ TableTitle }) {
       {/* Spacer for fixed header */}
       <div className="header-spacer"></div>
 
-      {/* Lead Cards - SERVER DATA */}
-      {filteredLeads.length > 0 ? (
-        filteredLeads?.map((lead, index) => {
+      {/* Lead Cards */}
+      {serverLeads.length > 0 ? (
+        serverLeads.map((lead, index) => {
           const serialNumber = ((currentPage - 1) * itemsPerPage) + index + 1;
           return (
             <div key={lead._id || index} className="Dynamic-card">
@@ -334,13 +338,13 @@ function PendingLeadCardPage({ TableTitle }) {
                       <p>
                         <span className='card-heading'>Latest Followup:- </span>
                         <span>
-                          {lead?.latestFollowup?.followupMessage || "NA"}
+                          {lead?.latestFollowup[0]?.followupMessage || "NA"}
                         </span>
                       </p>
                       <p>
                         <span style={{ color: "grey" }}>
-                          {lead?.latestFollowup?.createdAt
-                            ? format(lead.latestFollowup.createdAt)
+                          {lead?.latestFollowup[0]?.createdAt
+                            ? format(lead.latestFollowup[0].createdAt)
                             : 'No Followup'}
                         </span>
                       </p>
@@ -446,7 +450,7 @@ function PendingLeadCardPage({ TableTitle }) {
         <div className="no-results">No leads found matching your filters</div>
       )}
 
-      {/* Pagination - SERVER SIDE */}
+      {/* Pagination */}
       {totalRecords > 0 && (
         <div className="pagination">
           <button
@@ -456,7 +460,7 @@ function PendingLeadCardPage({ TableTitle }) {
             <i className="ri-arrow-left-line"></i>
           </button>
           <span>
-            {currentPage} of {totalPages || 1}
+            Page {currentPage} of {totalPages || 1} ({totalRecords} total)
           </span>
           <button
             onClick={() => handlePageChange(currentPage + 1)}
@@ -467,7 +471,7 @@ function PendingLeadCardPage({ TableTitle }) {
         </div>
       )}
 
-      {/* Filter Modal - EXACTLY SAME */}
+      {/* Filter Modal */}
       {isFilterModalOpen && (
         <div className="filter-modal-overlay" onClick={closeFilterModal}>
           <div className="filter-modal" onClick={(e) => e.stopPropagation()}>
@@ -477,61 +481,64 @@ function PendingLeadCardPage({ TableTitle }) {
                 <i className="ri-close-line"></i>
               </button>
             </div>
-            
+
             <div className="filter-modal-body">
-                {/* Tag Filter */}
+              {/* Tag Filter */}
               <div className="filter-section">
                 <label>Tags</label>
                 <MultiSelect
-                  value={selectedTagValues}
+                  value={selectedTagIds}
                   options={tagsOptions}
                   optionLabel="name"
-                  onChange={(e) => { isFilterChange.current = true; setSelectedTagValues(e.value); }}
+                  onChange={(e) => { 
+                    isFilterChange.current = true; 
+                    setSelectedTagIds(e.value);
+                  }}
                   placeholder="Filter by Tags"
                   className="custom-input custom-multiselect"
                   display="chip"
                   filter
-                  filterPlaceholder="Search tags..."
-                  onFilter={(e) => setTagSearchQuery(e.filter)}
                 />
               </div>
-                 {/* Status Filter */}
+
+              {/* Status Filter */}
               <div className="filter-section">
                 <label>Status</label>
                 <MultiSelect
-                  value={selectedStatusValues}
+                  value={selectedStatusIds}
                   options={statusOptions}
                   optionLabel="name"
-                  onChange={(e) => { isFilterChange.current = true; setSelectedStatusValues(e.value); }}
+                  onChange={(e) => { 
+                    isFilterChange.current = true; 
+                    setSelectedStatusIds(e.value);
+                  }}
+                  filter
                   placeholder="Filter by Status"
                   className="custom-input custom-multiselect"
                   display="chip"
                 />
               </div>
 
-
               {/* Service Filter */}
               <div className="filter-section">
                 <label>Service</label>
                 <MultiSelect
-                  value={selectedServiceValues}
+                filter
+                  value={selectedServiceIds}
                   options={serviceOptions}
                   optionLabel="name"
-                  onChange={(e) => { isFilterChange.current = true; setSelectedServiceValues(e.value); }}
+                  onChange={(e) => { 
+                    isFilterChange.current = true; 
+                    setSelectedServiceIds(e.value);
+                  }}
                   placeholder="Filter by Service"
                   className="custom-input custom-multiselect"
                   display="chip"
                 />
               </div>
-
-           
-            
             </div>
 
             <div className="filter-modal-footer">
-              <button className="apply-filters-btn" onClick={applyFilters}>
-                Apply Filters
-              </button>
               <button className="clear-all-btn" onClick={clearAllFilters}>
                 Clear All Filters
               </button>

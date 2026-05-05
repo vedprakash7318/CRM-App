@@ -20,8 +20,6 @@ import Modal from '../Components/LeadForm';
 import { ToastContainer } from "react-toastify";
 import "./CSS/Dashboard.css";
 
-
-
 // Icon Mapping
 const icons = {
   LayoutDashboard,
@@ -52,20 +50,6 @@ const Dashboard = ({ children }) => {
   const userString = localStorage.getItem('Emp');
   const name = userString ? JSON.parse(userString) : null;
 
-
-  
-// useEffect(() => {
-//   document.addEventListener(
-//     "click",
-//     () => {
-//       new Audio("/ring1.mp3").play().catch(() => {});
-//     },
-//     { once: true }
-//   );
-// }, []);
-
-
-
   // Menu items matching your old navigation
   const menuList = [
     { 
@@ -88,7 +72,7 @@ const Dashboard = ({ children }) => {
     },
     { 
       label: "Today Reminders", 
-      path: "/todayRminders", 
+      path: "/todayReminders", 
       icon: "Calendar",
       exact: true
     },
@@ -116,12 +100,6 @@ const Dashboard = ({ children }) => {
       icon: "Calendar",
       exact: true
     },
-    { 
-      label: "Report", 
-      path: "/report", 
-      icon: "FileText",
-      exact: true
-    }
   ];
 
   // Check authentication
@@ -132,11 +110,12 @@ const Dashboard = ({ children }) => {
     }
   }, [navigate]);
 
-  // Responsive sidebar
+  // Responsive sidebar - FIXED: Close sidebar by default on mobile
   useEffect(() => {
     const detectMobile = () => {
       const mobile = window.innerWidth <= 1024;
       setIsMobile(mobile);
+      // On mobile, sidebar starts closed. On desktop, sidebar starts open
       setIsSidebarOpen(!mobile);
     };
     
@@ -236,6 +215,11 @@ const Dashboard = ({ children }) => {
     return submenuItems?.some(item => isActive(item.path));
   };
 
+  // Close sidebar function for mobile close button
+  const closeSidebar = () => {
+    setIsSidebarOpen(false);
+  };
+
   return (
     <div className="dashboard">
       {/* Mobile Overlay */}
@@ -250,7 +234,7 @@ const Dashboard = ({ children }) => {
         }`}
       >
         <div className="sidebar-content">
-          {/* Header */}
+          {/* Header with Close Button on Mobile */}
           <div className="sidebar-header">
             {isSidebarOpen ? (
               <div className="logo">
@@ -259,6 +243,16 @@ const Dashboard = ({ children }) => {
                   {/* <img src="Images/cr.gif" alt="Logo" className="sidebar-logo-img" /> */}
                 </div>
                 <h2>Dashboard</h2>
+                {/* Close button for mobile */}
+                {isMobile && (
+                  <button 
+                    className="mobile-close-btn"
+                    onClick={closeSidebar}
+                    aria-label="Close sidebar"
+                  >
+                    <X size={20} />
+                  </button>
+                )}
               </div>
             ) : (
               <div className="logo-icon">
