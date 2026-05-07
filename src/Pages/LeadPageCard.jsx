@@ -4,13 +4,14 @@ import FollowUpNotes from '../Components/FollowUpNotes';
 import Modal from '../Components/LeadForm';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { MultiSelect } from 'primereact/multiselect';
-import { ClipLoader } from 'react-spinners';
 import { useSelector, useDispatch } from 'react-redux';
-import { fetchTags } from '../Features/LeadSlice';
 import { format } from 'timeago.js';
 import axios from 'axios';
+import Skeleton from 'react-loading-skeleton';
+import 'react-loading-skeleton/dist/skeleton.css';
 
 function LeadPageCard({ TableTitle, onFollowupAdded }) {
+  
   // State variables
   const [searchParams, setSearchParams] = useSearchParams();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -22,23 +23,25 @@ function LeadPageCard({ TableTitle, onFollowupAdded }) {
   const [searchQuery, setSearchQuery] = useState(() => localStorage.getItem('leadSearchQuery') || '');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(() => localStorage.getItem('leadSearchQuery') || '');
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false); // Add this for smooth refresh
+  const [refreshing, setRefreshing] = useState(false);
   const [tagSearchQuery, setTagSearchQuery] = useState('');
   const [statusOptions, setStatusOptions] = useState([]);
   const [serviceOptions, setServiceOptions] = useState([]);
+  const [tagOptionsWithIds, setTagOptionsWithIds] = useState([]);
   
-  // New state for server-side data
+  // State for server-side data
   const [serverLeads, setServerLeads] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
   const [totalRecords, setTotalRecords] = useState(0);
   const [serverLoading, setServerLoading] = useState(false);
   
-  // New state for filter modal
+  // State for filter modal
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
-  // Ref for container
+  // Refs
   const containerRef = useRef(null);
-  const abortControllerRef = useRef(null); // Add for request cancellation
+  const abortControllerRef = useRef(null);
+  const scrollContainerRef = useRef(null);
 
   // Constants
   const itemsPerPage = 5;
@@ -46,51 +49,82 @@ function LeadPageCard({ TableTitle, onFollowupAdded }) {
   const dispatch = useDispatch();
   const tagData = useSelector((state) => state.leads.tag);
 
-  // Get employeeId from URL params
   const employeeId = localStorage.getItem("employeeId");
 
-  // Initialize current page - with localStorage persistence
+  // Initialize current page
   const [currentPage, setCurrentPage] = useState(() => {
-    // First check URL params
     const pageFromUrl = parseInt(searchParams.get('page'));
     if (pageFromUrl && !isNaN(pageFromUrl)) {
       return pageFromUrl;
     }
-    // Then check localStorage
     const savedPage = localStorage.getItem('currentLeadPage');
     if (savedPage) {
       return parseInt(savedPage);
     }
-    // Default to page 1
     return 1;
   });
 
-  // Initialize selected tags
+  // Initialize filters
   const [selectedTagValues, setSelectedTagValues] = useState(() => {
     const savedTags = localStorage.getItem('selectedTagFilters');
     return savedTags ? JSON.parse(savedTags) : [];
   });
 
-  // Initialize selected services
   const [selectedServiceValues, setSelectedServiceValues] = useState(() => {
     const savedServices = localStorage.getItem('selectedServiceFilters');
     return savedServices ? JSON.parse(savedServices) : [];
   });
 
-  // Initialize selected status
   const [selectedStatusValues, setSelectedStatusValues] = useState(() => {
     const savedStatus = localStorage.getItem('selectedStatusFilters');
     return savedStatus ? JSON.parse(savedStatus) : [];
   });
 
-  // Effects
+  // Fetch tags with IDs from API
+  useEffect(() => {
+    const fetchTagsWithIds = async () => {
+      try {
+        const APi_Url = import.meta.env.VITE_API_URL;
+        const addedBy = localStorage.getItem('addedBy');
+        const response = await axios.get(`${APi_Url}/digicoder/crm/api/v1/tags/getall/${addedBy}`);
+        
+        if (response.data.tags) {
+          const tagsWithIds = response.data.tags.map(tag => ({
+            name: tag.tagName,
+            value: tag._id,
+            tagName: tag.tagName
+          }));
+          setTagOptionsWithIds(tagsWithIds);
+        }
+      } catch (error) {
+        console.error('Error fetching tags:', error);
+        if (tagData && tagData.length > 0) {
+          const tagsFromRedux = tagData.map(tag => ({
+            name: tag.tagName,
+            value: tag._id || tag.tagName,
+            tagName: tag.tagName
+          }));
+          setTagOptionsWithIds(tagsFromRedux);
+        }
+      }
+    };
+    fetchTagsWithIds();
+  }, [tagData]);
+
+  // Filtered tag options for search
+  const filteredTagOptions = useMemo(() => {
+    return tagOptionsWithIds.filter(tag => 
+      tag.name.toLowerCase().includes(tagSearchQuery.toLowerCase())
+    );
+  }, [tagOptionsWithIds, tagSearchQuery]);
+
+  // Effects for pagination and filters
   useEffect(() => {
     searchParams.set('page', currentPage.toString());
     setSearchParams(searchParams);
     localStorage.setItem('currentLeadPage', currentPage.toString());
   }, [currentPage, setSearchParams, searchParams]);
 
-  // Debounce search query and save to localStorage
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearchQuery(searchQuery);
@@ -98,10 +132,6 @@ function LeadPageCard({ TableTitle, onFollowupAdded }) {
     }, 500);
     return () => clearTimeout(handler);
   }, [searchQuery]);
-
-  useEffect(() => {
-    dispatch(fetchTags());
-  }, [dispatch]);
 
   useEffect(() => {
     localStorage.setItem('selectedTagFilters', JSON.stringify(selectedTagValues));
@@ -114,6 +144,17 @@ function LeadPageCard({ TableTitle, onFollowupAdded }) {
   useEffect(() => {
     localStorage.setItem('selectedStatusFilters', JSON.stringify(selectedStatusValues));
   }, [selectedStatusValues]);
+
+  // Scroll to top function
+  const scrollToTop = useCallback((behavior = 'smooth') => {
+    window.scrollTo({ top: 0, behavior });
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({ top: 0, behavior });
+    }
+    if (containerRef.current) {
+      containerRef.current.scrollIntoView({ behavior, block: 'start' });
+    }
+  }, []);
 
   // Fetch statuses from API
   useEffect(() => {
@@ -155,24 +196,19 @@ function LeadPageCard({ TableTitle, onFollowupAdded }) {
     fetchServices();
   }, []);
 
-  // ============================================
-  // 🔥 SERVER-SIDE DATA FETCHING (WITH ABORT CONTROLLER)
-  // ============================================
+  // Fetch leads from server
   const fetchLeadsFromServer = useCallback(async (showRefreshing = false) => {
     if (!employeeId) {
       console.error('No employee ID found');
       return;
     }
 
-    // Cancel previous request if exists
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
 
-    // Create new abort controller
     abortControllerRef.current = new AbortController();
 
-    // Set loading states
     if (showRefreshing) {
       setRefreshing(true);
     } else {
@@ -182,7 +218,6 @@ function LeadPageCard({ TableTitle, onFollowupAdded }) {
     try {
       const APi_Url = import.meta.env.VITE_API_URL;
       
-      // Build query params
       const params = new URLSearchParams();
       params.append('page', currentPage);
       params.append('limit', itemsPerPage);
@@ -207,7 +242,7 @@ function LeadPageCard({ TableTitle, onFollowupAdded }) {
         `${APi_Url}/digicoder/crm/api/v1/lead/empgetall/${employeeId}?${params.toString()}`,
         {
           signal: abortControllerRef.current.signal,
-          timeout: 10000 // 10 second timeout
+          timeout: 10000
         }
       );
 
@@ -217,7 +252,6 @@ function LeadPageCard({ TableTitle, onFollowupAdded }) {
         setTotalRecords(response.data.pagination.totalRecords || 0);
       }
     } catch (error) {
-      // Ignore abort errors
       if (error.name !== 'CanceledError' && error.name !== 'AbortError') {
         console.error('Error fetching leads:', error);
         setServerLeads([]);
@@ -230,7 +264,7 @@ function LeadPageCard({ TableTitle, onFollowupAdded }) {
     }
   }, [employeeId, currentPage, debouncedSearchQuery, selectedTagValues, selectedStatusValues, selectedServiceValues]);
 
-  // Track previous filter values to detect actual changes
+  // Track previous filter values
   const prevFilters = useRef({
     search: localStorage.getItem('leadSearchQuery') || '',
     tags: selectedTagValues,
@@ -238,27 +272,21 @@ function LeadPageCard({ TableTitle, onFollowupAdded }) {
     services: selectedServiceValues
   });
 
-  // Reset to page 1 when filters change, but NOT on initial load or after refresh
   const isInitialMount = useRef(true);
 
   useEffect(() => {
-    // Skip the first run when component mounts
     if (isInitialMount.current) {
       isInitialMount.current = false;
-      
-      // After initial mount, fetch data with restored filters and page
       fetchLeadsFromServer();
       return;
     }
     
-    // Check if filters actually changed (not just because of localStorage restoration)
     const filtersChanged = 
       prevFilters.current.search !== debouncedSearchQuery ||
       JSON.stringify(prevFilters.current.tags) !== JSON.stringify(selectedTagValues) ||
       JSON.stringify(prevFilters.current.status) !== JSON.stringify(selectedStatusValues) ||
       JSON.stringify(prevFilters.current.services) !== JSON.stringify(selectedServiceValues);
     
-    // Update previous filters
     prevFilters.current = {
       search: debouncedSearchQuery,
       tags: selectedTagValues,
@@ -266,47 +294,40 @@ function LeadPageCard({ TableTitle, onFollowupAdded }) {
       services: selectedServiceValues
     };
     
-    // Only reset to page 1 if filters actually changed by user
     if (filtersChanged) {
       if (currentPage !== 1) {
         setCurrentPage(1);
+        scrollToTop('smooth');
       } else {
         fetchLeadsFromServer();
       }
     } else {
-      // If filters didn't change (like after refresh), just fetch data with current page
       fetchLeadsFromServer();
     }
   }, [debouncedSearchQuery, selectedTagValues, selectedStatusValues, selectedServiceValues]);
 
-  // Memoized values
-  const tagsOptions = useMemo(() => {
-    return tagData
-      .filter(tag => tag.tagName.toLowerCase().includes(tagSearchQuery.toLowerCase()))
-      .map(tag => ({ name: tag.tagName, value: tag.tagName }));
-  }, [tagData, tagSearchQuery]);
+  const handlePageChange = useCallback((pageNumber) => {
+    if (pageNumber >= 1 && pageNumber <= totalPages && !serverLoading && !refreshing) {
+      setCurrentPage(pageNumber);
+      localStorage.setItem('currentLeadPage', pageNumber.toString());
+      scrollToTop('auto');
+    }
+  }, [totalPages, serverLoading, refreshing, scrollToTop]);
 
-  // No client-side filtering needed anymore
-  const filteredLeads = serverLeads;
-
-  // Ensure current page is valid
   useEffect(() => {
-    if (filteredLeads.length === 0 && currentPage > 1 && !serverLoading && !refreshing) {
+    if (!isInitialMount.current) {
+      scrollToTop('auto');
+      fetchLeadsFromServer();
+    }
+  }, [currentPage, fetchLeadsFromServer, scrollToTop]);
+
+  useEffect(() => {
+    if (serverLeads.length === 0 && currentPage > 1 && !serverLoading && !refreshing && totalRecords > 0) {
       handlePageChange(currentPage - 1);
     }
-  }, [filteredLeads.length, currentPage, serverLoading, refreshing]);
+  }, [serverLeads.length, currentPage, serverLoading, refreshing, totalRecords, handlePageChange]);
 
   // Event handlers
-  const handlePageChange = (pageNumber) => {
-    if (pageNumber >= 1 && pageNumber <= totalPages) {
-      setCurrentPage(pageNumber);
-      // Save to localStorage
-      localStorage.setItem('currentLeadPage', pageNumber.toString());
-      // Scroll to top smoothly
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  };
-
   const openModal = (isEdit) => {
     setEditMode(isEdit);
     setTitle(isEdit ? 'Update Lead' : 'Add New Lead');
@@ -334,21 +355,14 @@ function LeadPageCard({ TableTitle, onFollowupAdded }) {
     setNoteOpen(true);
   };
 
-  // ============================================
-  // 🔥 IMPORTANT: Followup close hone par fetch call
-  // ============================================
   const closeNote = useCallback(async (followupAdded = false) => {
     setNoteOpen(false);
     
-    // Agar followup add hua hai to refresh karo data
     if (followupAdded) {
-      // Pehle parent component ko batao (agar zaroorat ho)
       if (onFollowupAdded) {
         onFollowupAdded();
       }
-      
-      // Ab turant API call karo with refreshing indicator
-      await fetchLeadsFromServer(true); // true = show refreshing state
+      await fetchLeadsFromServer(true);
     }
   }, [onFollowupAdded, fetchLeadsFromServer]);
 
@@ -360,7 +374,6 @@ function LeadPageCard({ TableTitle, onFollowupAdded }) {
     setTagSearchQuery(event.target.value);
   };
 
-  // Filter modal functions
   const openFilterModal = () => {
     setIsFilterModalOpen(true);
   };
@@ -369,45 +382,116 @@ function LeadPageCard({ TableTitle, onFollowupAdded }) {
     setIsFilterModalOpen(false);
   };
 
-  const applyFilters = () => {
-    closeFilterModal();
-  };
-
   const clearAllFilters = () => {
     setSelectedServiceValues([]);
     setSelectedStatusValues([]);
     setSelectedTagValues([]);
-    setSearchQuery(''); // Clear search query
-    localStorage.removeItem('leadSearchQuery'); // Remove from localStorage
+    setSearchQuery('');
+    localStorage.removeItem('leadSearchQuery');
     closeFilterModal();
+    scrollToTop('smooth');
   };
 
-  // ============================================
-  // FOLLOWUP NOTES COMPONENT KE LIYE PROPS
-  // ============================================
-  const followUpNotesProps = {
-    isOpenNote: noteOpen,
-    oncloseNote: closeNote,
-    leadData: leadData,
-    onFollowupAdded: onFollowupAdded
-  };
+  // Skeleton Card Component
+  const CardSkeleton = () => (
+    <div className="Dynamic-card">
+      <strong style={{ float: 'right' }}>
+        <Skeleton width={40} />
+      </strong>
 
-  // Render loading state
+      <div className="dynamic-card-details-body">
+        <div className="dynamic-card-details">
+          <div className="card-body">
+            <p>
+              <span className='card-heading'><Skeleton width={50} /></span>
+              <span><Skeleton width={150} /></span>
+            </p>
+            <p>
+              <span className='card-heading'><Skeleton width={60} /></span>
+              <span><Skeleton width={130} /></span>
+            </p>
+
+            <div className="priority-source">
+              <p>
+                <span className='card-heading'><Skeleton width={60} /></span>
+                <span><Skeleton width={100} /></span>
+              </p>
+              <p>
+                <span className='card-heading'><Skeleton width={55} /></span>
+                <span><Skeleton width={90} /></span>
+              </p>
+            </div>
+
+            <div className="tags">
+              <Skeleton width={60} height={24} style={{ borderRadius: '12px', marginRight: '8px' }} />
+              <Skeleton width={70} height={24} style={{ borderRadius: '12px', marginRight: '8px' }} />
+              <Skeleton width={50} height={24} style={{ borderRadius: '12px' }} />
+            </div>
+
+            <br />
+            <div className="priority-source">
+              <p>
+                <span className='card-heading'><Skeleton width={110} /></span>
+                <span><Skeleton width={120} /></span>
+              </p>
+              <p>
+                <Skeleton width={80} />
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="dynamic-card-footer">
+        <div className='action-abtn'>
+          <div className="call-icon-wrapper">
+            <Skeleton circle width={32} height={32} />
+          </div>
+          <div className="call-icon-wrapper">
+            <Skeleton circle width={32} height={32} />
+          </div>
+        </div>
+        <div className='action-btn-footer'>
+          <div className="call-icon-wrapper">
+            <Skeleton circle width={32} height={32} />
+          </div>
+          <div className="call-icon-wrapper">
+            <Skeleton circle width={32} height={32} />
+          </div>
+          <div className="call-icon-wrapper">
+            <Skeleton circle width={32} height={32} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Show initial loader while data is being fetched
   if (loading) {
     return (
       <div className="dynamic-card-outer">
-        <div className="loader-container">
-          <ClipLoader size={50} color={'#3454D1'} loading={loading} />
+        <div className="fixed-filter-header">
+          <div className="search-container">
+            <Skeleton height={40} style={{ borderRadius: '6px' }} />
+          </div>
+          <div className="filter-button-wrapper">
+            <Skeleton height={40} width={100} style={{ borderRadius: '6px' }} />
+          </div>
         </div>
+        <div className="header-spacer"></div>
+        {[...Array(5)].map((_, index) => (
+          <CardSkeleton key={index} />
+        ))}
       </div>
     );
   }
 
+  const showDataLoader = serverLoading && !refreshing && !loading;
+  
   return (
     <div className="dynamic-card-outer" ref={containerRef}>
       {/* Fixed Header with Search and Filter */}
       <div className="fixed-filter-header">
-        {/* Search Input */}
         <div className="search-container">
           <input
             type="text"
@@ -418,7 +502,6 @@ function LeadPageCard({ TableTitle, onFollowupAdded }) {
           />
         </div>
 
-        {/* Filter Button */}
         <div className="filter-button-wrapper">
           <button className="filter-toggle-btn" onClick={openFilterModal}>
             <i className="ri-filter-3-fill"></i> Filters
@@ -433,20 +516,23 @@ function LeadPageCard({ TableTitle, onFollowupAdded }) {
         </div>
       </div>
 
-      {/* Spacer for fixed header */}
       <div className="header-spacer"></div>
 
-      {/* Refreshing Indicator (for followup updates) */}
-      {refreshing && (
-        <div className="refreshing-overlay">
-          <ClipLoader size={20} color={'#3454D1'} />
-          <span>Updating...</span>
+      {/* Loading overlay for page refresh */}
+      {(showDataLoader || refreshing) && (
+        <div className="loading-overlay">
+          <div className="loading-content">
+            <div className="skeleton-spinner">
+              <Skeleton circle width={40} height={40} />
+            </div>
+            <span>Loading leads...</span>
+          </div>
         </div>
       )}
 
-      {/* Lead Cards - SERVER DATA */}
-      {filteredLeads.length > 0 ? (
-        filteredLeads?.map((lead, index) => {
+      {/* Leads list with skeleton while loading */}
+      {!showDataLoader && serverLeads.length > 0 ? (
+        serverLeads?.map((lead, index) => {
           const serialNumber = ((currentPage - 1) * itemsPerPage) + index + 1;
           return (
             <div key={lead._id || index} className="Dynamic-card">
@@ -596,12 +682,17 @@ function LeadPageCard({ TableTitle, onFollowupAdded }) {
             </div>
           );
         })
-      ) : (
+      ) : !showDataLoader && serverLeads.length === 0 && !loading ? (
         <div className="no-results">No leads found matching your filters</div>
-      )}
+      ) : showDataLoader ? (
+        // Show skeletons while loading
+        [...Array(5)].map((_, index) => (
+          <CardSkeleton key={index} />
+        ))
+      ) : null}
 
-      {/* Pagination - SERVER SIDE */}
-      {totalRecords > 0 && (
+      {/* Pagination */}
+      {totalRecords > 0 && !showDataLoader && (
         <div className="pagination">
           <button
             onClick={() => handlePageChange(currentPage - 1)}
@@ -610,7 +701,7 @@ function LeadPageCard({ TableTitle, onFollowupAdded }) {
             <i className="ri-arrow-left-line"></i>
           </button>
           <span>
-            {currentPage} of {totalPages || 1}
+            Page {currentPage} of {totalPages || 1} ({totalRecords} total)
           </span>
           <button
             onClick={() => handlePageChange(currentPage + 1)}
@@ -633,13 +724,11 @@ function LeadPageCard({ TableTitle, onFollowupAdded }) {
             </div>
             
             <div className="filter-modal-body">
-
-                {/* Tag Filter */}
               <div className="filter-section">
                 <label>Tags</label>
                 <MultiSelect
                   value={selectedTagValues}
-                  options={tagsOptions}
+                  options={filteredTagOptions}
                   optionLabel="name"
                   onChange={(e) => setSelectedTagValues(e.value)}
                   placeholder="Filter by Tags"
@@ -651,9 +740,6 @@ function LeadPageCard({ TableTitle, onFollowupAdded }) {
                 />
               </div>
 
-
-
-              {/* Status Filter */}
               <div className="filter-section">
                 <label>Status</label>
                 <MultiSelect
@@ -666,9 +752,7 @@ function LeadPageCard({ TableTitle, onFollowupAdded }) {
                   display="chip"
                 />
               </div>
-
               
-              {/* Service Filter */}
               <div className="filter-section">
                 <label>Service</label>
                 <MultiSelect
@@ -681,14 +765,9 @@ function LeadPageCard({ TableTitle, onFollowupAdded }) {
                   display="chip"
                 />
               </div>
-
-          
             </div>
 
             <div className="filter-modal-footer">
-              {/* <button className="apply-filters-btn" onClick={applyFilters}>
-                Apply Filters
-              </button> */}
               <button className="apply-filters-btn" onClick={clearAllFilters}>
                 Clear All Filters
               </button>
@@ -706,7 +785,6 @@ function LeadPageCard({ TableTitle, onFollowupAdded }) {
         leadData={leadData}
       />
 
-      {/* FollowUp Notes - with updated props */}
       <FollowUpNotes
         isOpenNote={noteOpen}
         oncloseNote={closeNote}

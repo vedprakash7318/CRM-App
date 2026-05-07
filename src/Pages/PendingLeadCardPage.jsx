@@ -4,11 +4,12 @@ import FollowUpNotes from '../Components/FollowUpNotes';
 import Modal from '../Components/LeadForm';
 import { useNavigate } from 'react-router-dom';
 import { MultiSelect } from 'primereact/multiselect';
-import { ClipLoader } from 'react-spinners';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchTags } from '../Features/LeadSlice';
 import { format } from 'timeago.js';
 import axios from 'axios';
+import Skeleton from 'react-loading-skeleton';
+import 'react-loading-skeleton/dist/skeleton.css';
 
 function PendingLeadCardPage({ TableTitle }) {
   const navigate = useNavigate();
@@ -45,7 +46,6 @@ function PendingLeadCardPage({ TableTitle }) {
     try { return JSON.parse(localStorage.getItem(STORAGE_KEY))?.currentPage || 1; } catch { return 1; }
   });
   
-  // Store IDs instead of names
   const [selectedTagIds, setSelectedTagIds] = useState(() => {
     try { return JSON.parse(localStorage.getItem(STORAGE_KEY))?.tags || []; } catch { return []; }
   });
@@ -60,7 +60,6 @@ function PendingLeadCardPage({ TableTitle }) {
   const itemsPerPage = 10;
   const isFilterChange = useRef(false);
 
-  // Save state
   useEffect(() => {
     saveState({ 
       currentPage, 
@@ -73,13 +72,11 @@ function PendingLeadCardPage({ TableTitle }) {
 
   useEffect(() => { dispatch(fetchTags()); }, [dispatch]);
 
-  // Debounce search
   useEffect(() => {
     const handler = setTimeout(() => setDebouncedSearchQuery(searchQuery), 500);
     return () => clearTimeout(handler);
   }, [searchQuery]);
 
-  // Fetch statuses from API
   useEffect(() => {
     const fetchStatuses = async () => {
       try {
@@ -90,7 +87,7 @@ function PendingLeadCardPage({ TableTitle }) {
         const statuses = response.data.leadStatus || [];
         setStatusOptions(statuses.map(status => ({
           name: status.leadStatusText,
-          value: status._id // Store ID
+          value: status._id
         })));
 
       } catch (error) {
@@ -100,7 +97,6 @@ function PendingLeadCardPage({ TableTitle }) {
     fetchStatuses();
   }, []);
 
-  // Fetch services from API
   useEffect(() => {
     const fetchServices = async () => {
       try {
@@ -111,7 +107,7 @@ function PendingLeadCardPage({ TableTitle }) {
         const services = response.data.services || [];
         setServiceOptions(services.map(service => ({
           name: service.servicesText,
-          value: service._id // Store ID
+          value: service._id
         })));
       } catch (error) {
         console.error('Error fetching services:', error);
@@ -120,11 +116,10 @@ function PendingLeadCardPage({ TableTitle }) {
     fetchServices();
   }, []);
 
-  // Tag options with IDs
   const tagsOptions = useMemo(() => {
     return tagData.map(tag => ({ 
       name: tag.tagName, 
-      value: tag._id // Store ID
+      value: tag._id
     }));
   }, [tagData]);
 
@@ -151,7 +146,6 @@ function PendingLeadCardPage({ TableTitle }) {
       }
       
     } catch (error) {
-      // console.error('Error fetching leads:', error);
       setServerLeads([]);
       setTotalPages(1);
     } finally {
@@ -161,7 +155,6 @@ function PendingLeadCardPage({ TableTitle }) {
     }
   }, [employeeId, currentPage, debouncedSearchQuery, selectedTagIds, selectedStatusIds, selectedServiceIds]);
 
-  // When filters change → reset to page 1
   useEffect(() => {
     if (isFilterChange.current) {
       isFilterChange.current = false;
@@ -251,21 +244,65 @@ function PendingLeadCardPage({ TableTitle }) {
     closeFilterModal();
   };
 
+  // Loading state with Skeleton - completely dynamic
   if (loading && serverLoading) {
     return (
       <div className="dynamic-card-outer">
-        <div className="loader-container">
-          <ClipLoader size={50} color={'#3454D1'} loading={loading || serverLoading} />
+        <div className="fixed-filter-header">
+          <div className="search-container">
+            <Skeleton height={40} style={{ borderRadius: '6px' }} />
+          </div>
+          <div className="filter-button-wrapper">
+            <Skeleton height={40} width={100} style={{ borderRadius: '6px' }} />
+          </div>
         </div>
+        <div className="header-spacer"></div>
+        {[...Array(5)].map((_, index) => (
+          <div key={index} className="Dynamic-card">
+            <strong style={{ float: 'right' }}>
+              <Skeleton width={40} />
+            </strong>
+            <div className="dynamic-card-details-body">
+              <div className="dynamic-card-details">
+                <div className="card-body">
+                  <p><Skeleton width={200} /></p>
+                  <p><Skeleton width={180} /></p>
+                  <div className="priority-source">
+                    <p><Skeleton width={150} /></p>
+                    <p><Skeleton width={130} /></p>
+                  </div>
+                  <div className="tags">
+                    <Skeleton width={60} height={24} style={{ borderRadius: '12px', marginRight: '8px' }} />
+                    <Skeleton width={70} height={24} style={{ borderRadius: '12px' }} />
+                  </div>
+                  <br />
+                  <div className="priority-source">
+                    <p><Skeleton width={250} /></p>
+                    <p><Skeleton width={80} /></p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="dynamic-card-footer">
+              <div className='action-abtn'>
+                <Skeleton circle width={32} height={32} />
+                <Skeleton circle width={32} height={32} />
+              </div>
+              <div className='action-btn-footer'>
+                <Skeleton circle width={32} height={32} />
+                <Skeleton circle width={32} height={32} />
+                <Skeleton circle width={32} height={32} />
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     );
   }
 
   return (
     <div className="dynamic-card-outer" ref={containerRef}>
-      {/* Fixed Header with Search and Filter */}
       <div className="fixed-filter-header">
-        {/* Search Input */}
         <div className="search-container">
           <input
             type="text"
@@ -276,7 +313,6 @@ function PendingLeadCardPage({ TableTitle }) {
           />
         </div>
 
-        {/* Filter Button */}
         <div className="filter-button-wrapper">
           <button className="filter-toggle-btn" onClick={openFilterModal}>
             <i className="ri-filter-3-fill"></i> Filters
@@ -291,166 +327,222 @@ function PendingLeadCardPage({ TableTitle }) {
         </div>
       </div>
 
-      {/* Spacer for fixed header */}
       <div className="header-spacer"></div>
 
-      {/* Lead Cards */}
-      {serverLeads.length > 0 ? (
-        serverLeads.map((lead, index) => {
-          const serialNumber = ((currentPage - 1) * itemsPerPage) + index + 1;
-          return (
-            <div key={lead._id || index} className="Dynamic-card">
-              <strong style={{ float: 'right' }}>#{serialNumber}</strong>
-
-              <div className="dynamic-card-details-body">
-                <div className="dynamic-card-details">
-                  <div className="card-body">
-                    <p>
-                      <span className='card-heading'>Name:- </span>
-                      <span>{lead.name}</span>
-                    </p>
-                    <p>
-                      <span className='card-heading'>Mobile:- </span>
-                      <span>{lead.phone}</span>
-                    </p>
-
-                    <div className="priority-source">
-                      <p>
-                        <span className='card-heading'>Service:- </span>
-                        <span>{lead.services?.servicesText || "NA"}</span>
-                      </p>
-                      <p>
-                        <span className='card-heading'>Status:- </span>
-                        <span>{lead.leadStatus?.leadStatusText || "NA"}</span>
-                      </p>
-                    </div>
-
-                    <div className="tags">
-                      {lead.tags && Array.isArray(lead.tags) && lead.tags.map((tag, tagIndex) => (
-                        <span key={tagIndex} className="tag">
-                          {typeof tag === 'string' ? tag : tag.tagName}
-                        </span>
-                      ))}
-                    </div>
-
-                    <br />
-                    <div className="priority-source">
-                      <p>
-                        <span className='card-heading'>Latest Followup:- </span>
-                        <span>
-                          {lead?.latestFollowup[0]?.followupMessage || "NA"}
-                        </span>
-                      </p>
-                      <p>
-                        <span style={{ color: "grey" }}>
-                          {lead?.latestFollowup[0]?.createdAt
-                            ? format(lead.latestFollowup[0].createdAt)
-                            : 'No Followup'}
-                        </span>
-                      </p>
-                    </div>
+      {serverLoading && serverLeads.length === 0 ? (
+        [...Array(5)].map((_, index) => (
+          <div key={index} className="Dynamic-card">
+            <Skeleton width={40} style={{ float: 'right' }} />
+            <div className="dynamic-card-details-body">
+              <div className="dynamic-card-details">
+                <div className="card-body">
+                  <p><Skeleton width={200} /></p>
+                  <p><Skeleton width={180} /></p>
+                  <div className="priority-source">
+                    <p><Skeleton width={150} /></p>
+                    <p><Skeleton width={130} /></p>
                   </div>
-                </div>
-              </div>
-
-              <div className="dynamic-card-footer">
-                <div className='action-abtn'>
-                  <div className="call-icon-wrapper">
-                    <button
-                      style={{
-                        color: '#3454D1',
-                        backgroundColor: 'transparent',
-                        border: 'none',
-                        fontSize: '15px',
-                        cursor: 'pointer',
-                      }}
-                      onClick={() => handleEdit(lead)}
-                    >
-                      <i className="ri-edit-box-fill"></i>
-                    </button>
+                  <div className="tags">
+                    <Skeleton width={60} height={24} style={{ borderRadius: '12px', marginRight: '8px' }} />
+                    <Skeleton width={70} height={24} style={{ borderRadius: '12px' }} />
                   </div>
-
-                  <div className="call-icon-wrapper">
-                    <button
-                      onClick={() => handleView(lead)}
-                      style={{
-                        color: 'red',
-                        backgroundColor: 'transparent',
-                        border: 'none',
-                        fontSize: '15px',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      <i className="ri-eye-line"></i>
-                    </button>
-                  </div>
-                </div>
-
-                <div className='action-btn-footer'>
-                  <div className="call-icon-wrapper">
-                    <button
-                      onClick={() => handleStickyNote(lead)}
-                      style={{ border: 'none', background: 'transparent' }}
-                    >
-                      <a
-                        style={{
-                          cursor: 'pointer',
-                          textDecoration: 'none',
-                          fontSize: '15px',
-                          color: '#657C7B',
-                        }}
-                        className="ri-sticky-note-add-fill"
-                      />
-                    </button>
-                  </div>
-
-                  <div className="call-icon-wrapper">
-                    <a
-                      href={`https://wa.me/${lead.phone.startsWith('+91')
-                        ? lead.phone.replace(/\D/g, '')
-                        : '91' + lead.phone.replace(/\D/g, '')}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ textDecoration: 'none' }}
-                    >
-                      <button
-                        style={{
-                          color: 'green',
-                          border: 'none',
-                          background: 'transparent',
-                          fontSize: '15px',
-                          cursor: 'pointer',
-                          position: 'relative',
-                          bottom: '2px',
-                        }}
-                      >
-                        <i className="ri-whatsapp-line"></i>
-                      </button>
-                    </a>
-                  </div>
-
-                  <div className="call-icon-wrapper">
-                    <a
-                      href={`tel:${lead.phone}`}
-                      style={{
-                        cursor: 'pointer',
-                        textDecoration: 'none',
-                        fontSize: '15px',
-                        color: '#3454D1',
-                      }}
-                      className="ri-phone-fill"
-                    />
+                  <br />
+                  <div className="priority-source">
+                    <p><Skeleton width={250} /></p>
+                    <p><Skeleton width={80} /></p>
                   </div>
                 </div>
               </div>
             </div>
-          );
-        })
+            <div className="dynamic-card-footer">
+              <div className='action-abtn'>
+                <Skeleton circle width={32} height={32} />
+                <Skeleton circle width={32} height={32} />
+              </div>
+              <div className='action-btn-footer'>
+                <Skeleton circle width={32} height={32} />
+                <Skeleton circle width={32} height={32} />
+                <Skeleton circle width={32} height={32} />
+              </div>
+            </div>
+          </div>
+        ))
+      ) : serverLeads.length > 0 ? (
+        <>
+          {serverLeads.map((lead, index) => {
+            const serialNumber = ((currentPage - 1) * itemsPerPage) + index + 1;
+            return (
+              <div key={lead._id || index} className="Dynamic-card">
+                <strong style={{ float: 'right' }}>#{serialNumber}</strong>
+
+                <div className="dynamic-card-details-body">
+                  <div className="dynamic-card-details">
+                    <div className="card-body">
+                      <p>
+                        <span className='card-heading'>Name:- </span>
+                        <span>{lead.name}</span>
+                      </p>
+                      <p>
+                        <span className='card-heading'>Mobile:- </span>
+                        <span>{lead.phone}</span>
+                      </p>
+
+                      <div className="priority-source">
+                        <p>
+                          <span className='card-heading'>Service:- </span>
+                          <span>{lead.services?.servicesText || "NA"}</span>
+                        </p>
+                        <p>
+                          <span className='card-heading'>Status:- </span>
+                          <span>{lead.leadStatus?.leadStatusText || "NA"}</span>
+                        </p>
+                      </div>
+
+                      <div className="tags">
+                        {lead.tags && Array.isArray(lead.tags) && lead.tags.map((tag, tagIndex) => (
+                          <span key={tagIndex} className="tag">
+                            {typeof tag === 'string' ? tag : tag.tagName}
+                          </span>
+                        ))}
+                      </div>
+
+                      <br />
+                      <div className="priority-source">
+                        <p>
+                          <span className='card-heading'>Latest Followup:- </span>
+                          <span>
+                            {lead?.latestFollowup[0]?.followupMessage || "NA"}
+                          </span>
+                        </p>
+                        <p>
+                          <span style={{ color: "grey" }}>
+                            {lead?.latestFollowup[0]?.createdAt
+                              ? format(lead.latestFollowup[0].createdAt)
+                              : 'No Followup'}
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="dynamic-card-footer">
+                  <div className='action-abtn'>
+                    <div className="call-icon-wrapper">
+                      <button
+                        style={{
+                          color: '#3454D1',
+                          backgroundColor: 'transparent',
+                          border: 'none',
+                          fontSize: '15px',
+                          cursor: 'pointer',
+                        }}
+                        onClick={() => handleEdit(lead)}
+                      >
+                        <i className="ri-edit-box-fill"></i>
+                      </button>
+                    </div>
+
+                    <div className="call-icon-wrapper">
+                      <button
+                        onClick={() => handleView(lead)}
+                        style={{
+                          color: 'red',
+                          backgroundColor: 'transparent',
+                          border: 'none',
+                          fontSize: '15px',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <i className="ri-eye-line"></i>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className='action-btn-footer'>
+                    <div className="call-icon-wrapper">
+                      <button
+                        onClick={() => handleStickyNote(lead)}
+                        style={{ border: 'none', background: 'transparent' }}
+                      >
+                        <a
+                          style={{
+                            cursor: 'pointer',
+                            textDecoration: 'none',
+                            fontSize: '15px',
+                            color: '#657C7B',
+                          }}
+                          className="ri-sticky-note-add-fill"
+                        />
+                      </button>
+                    </div>
+
+                    <div className="call-icon-wrapper">
+                      <a
+                        href={`https://wa.me/${lead.phone.startsWith('+91')
+                          ? lead.phone.replace(/\D/g, '')
+                          : '91' + lead.phone.replace(/\D/g, '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ textDecoration: 'none' }}
+                      >
+                        <button
+                          style={{
+                            color: 'green',
+                            border: 'none',
+                            background: 'transparent',
+                            fontSize: '15px',
+                            cursor: 'pointer',
+                            position: 'relative',
+                            bottom: '2px',
+                          }}
+                        >
+                          <i className="ri-whatsapp-line"></i>
+                        </button>
+                      </a>
+                    </div>
+
+                    <div className="call-icon-wrapper">
+                      <a
+                        href={`tel:${lead.phone}`}
+                        style={{
+                          cursor: 'pointer',
+                          textDecoration: 'none',
+                          fontSize: '15px',
+                          color: '#3454D1',
+                        }}
+                        className="ri-phone-fill"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+          
+          {serverLoading && (
+            <div style={{ marginTop: '20px' }}>
+              <div className="Dynamic-card">
+                <Skeleton width={40} style={{ float: 'right' }} />
+                <div className="dynamic-card-details-body">
+                  <div className="card-body">
+                    <p><Skeleton width={200} /></p>
+                    <p><Skeleton width={180} /></p>
+                    <p><Skeleton width={150} /></p>
+                    <p><Skeleton width={130} /></p>
+                    <div className="tags">
+                      <Skeleton width={60} height={24} style={{ borderRadius: '12px' }} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
       ) : (
         <div className="no-results">No leads found matching your filters</div>
       )}
 
-      {/* Pagination */}
       {totalRecords > 0 && (
         <div className="pagination">
           <button
@@ -471,7 +563,6 @@ function PendingLeadCardPage({ TableTitle }) {
         </div>
       )}
 
-      {/* Filter Modal */}
       {isFilterModalOpen && (
         <div className="filter-modal-overlay" onClick={closeFilterModal}>
           <div className="filter-modal" onClick={(e) => e.stopPropagation()}>
@@ -483,7 +574,6 @@ function PendingLeadCardPage({ TableTitle }) {
             </div>
 
             <div className="filter-modal-body">
-              {/* Tag Filter */}
               <div className="filter-section">
                 <label>Tags</label>
                 <MultiSelect
@@ -501,7 +591,6 @@ function PendingLeadCardPage({ TableTitle }) {
                 />
               </div>
 
-              {/* Status Filter */}
               <div className="filter-section">
                 <label>Status</label>
                 <MultiSelect
@@ -519,7 +608,6 @@ function PendingLeadCardPage({ TableTitle }) {
                 />
               </div>
 
-              {/* Service Filter */}
               <div className="filter-section">
                 <label>Service</label>
                 <MultiSelect
@@ -547,7 +635,6 @@ function PendingLeadCardPage({ TableTitle }) {
         </div>
       )}
 
-      {/* Modals */}
       <Modal
         isOpen={isModalOpen}
         onClose={closeModal}

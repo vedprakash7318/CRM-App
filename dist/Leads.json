@@ -1,0 +1,48 @@
+{
+    "leads": [
+      {
+        "id":"1",
+        "name": "John Doe",
+        "phone": "916307275065",
+        "source": "Website",
+        "priority": "High"
+      },
+      {
+        "id":"2",
+        "name": "Jane Smith",
+        "phone": "9876543210",
+        "source": "Referral",
+        "priority": "Medium"
+      },
+      {
+        "id":"3",
+        "name": "Alice Johnson",
+        "phone": "5551234567",
+        "source": "Social Media",
+      
+        "priority": "Low"
+      },
+      {
+        "id":"4",
+        "name": "Bob Brown",
+        "phone": "5559876543",
+        "source": "Advertisement",
+        "priority": "High"
+      },
+      {
+        "id":"5",
+        "name": "Bob Brown",
+        "phone": "5559876543",
+        "source": "linkdin",
+        "priority": "High"
+      },
+      {
+        "id":"5",
+        "name": "Bob Brown",
+        "phone": "5559876543",
+        "source": "linkdin",
+        "priority": "High"
+      }
+    ]
+  }
+  

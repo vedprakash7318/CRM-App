@@ -99,7 +99,7 @@ function FullLeads() {
     country: formData.Country,
     leadStatus: formData.LeadStatus,
     tags: formData.tags,
-    
+
   };
 
   // Filter tags based on search term
@@ -265,7 +265,7 @@ function FullLeads() {
     setIsLoadingFollowUps(true);
     try {
       const response = await axios.get(`${APi_Url}/digicoder/crm/api/v1/followup/getall/${viewdata._id}`);
-      
+
       if (response.status === 200) {
         setFollowUps(Array.isArray(response.data.followups) ? response?.data?.followups : []);
       }
@@ -300,7 +300,7 @@ function FullLeads() {
       navigate("/pending")
     }
     else if (TableTitle == 'Today Reminders') {
-      navigate("/todayRminders")
+      navigate("/todayReminders")
     }
     else if (TableTitle == 'Missed Leads') {
       navigate("/missedLeads")
@@ -490,7 +490,15 @@ function FullLeads() {
                 <a href={`tel:${formData.Phone}`} style={{ textDecoration: "none", color: "blue" }}>
                   <button className="ri-phone-fill" style={{ background: "none", border: "none", color: "blue" }}></button>
                 </a>
-                <Link to={`mailto:${formData.Email}`}><img src="/Images/mail.svg" alt="" style={{ height: "25px", position: "relative", bottom: "8px" }} /></Link>
+                {formData.email ? (
+                  <a href={`mailto:${formData.email}`}>
+                    <img
+                      src="/Images/mail.svg"
+                      alt="mail"
+                      style={{ height: "25px", position: "relative", bottom: "8px" }}
+                    />
+                  </a>
+                ) : null}
               </div>
             </div>
 
@@ -588,9 +596,9 @@ function FullLeads() {
                       className="p-dropdown"
                     />
                   </div>
-                   <div>
+                  <div>
                     <div className="label">Services</div>
-                   <input
+                    <input
                       type="text"
                       className="input-field"
                       name="City"
@@ -648,8 +656,16 @@ function FullLeads() {
                       type="text"
                       className="input-field"
                       name="createdDate"
-                      value={formData.CreatedDate}
-                      onChange={handleChange}
+                      value={
+                        formData.CreatedDate
+                          ? new Date(formData.CreatedDate).toLocaleString("en-IN", {
+                            year: "numeric",
+                            month: "2-digit",
+                            day: "2-digit",
+
+                          })
+                          : ""
+                      }
                       disabled
                     />
                   </div>
@@ -695,7 +711,7 @@ function FullLeads() {
                             onKeyDown={(e) => e.stopPropagation()}
                           />
                         </Box>
-                        
+
                         {/* Filtered Menu Items */}
                         {filteredTags.length > 0 ? (
                           filteredTags.map((item) => (
@@ -811,20 +827,30 @@ function FullLeads() {
                 )}
               </div>
 
-              {actionBtn && (
+              {actionBtn && followUps.length > 0 && (
                 <div className="lead-action-btn">
-                  <button className="negative-btn" onClick={() => handleMarkNegative()}>Mark as Negative</button>
-                  <button className="close-btn" onClick={() => handleCloseForAlways()}>Mark as Close</button>
+                  <button className="negative-btn" onClick={() => handleMarkNegative()}>
+                    Mark as Negative
+                  </button>
+                  <button className="close-btn" onClick={() => handleCloseForAlways()}>
+                    Mark as Close
+                  </button>
                 </div>
               )}
-              {unCloseActionBtn && (
+
+              {unCloseActionBtn && followUps.length > 0 && (
                 <div className="lead-action-btn">
-                  <button className="negative-btn" onClick={() => handleUnCloseForAlways()}>Unclose Lead</button>
+                  <button className="negative-btn" onClick={() => handleUnCloseForAlways()}>
+                    Unclose Lead
+                  </button>
                 </div>
               )}
-              {unNegativeActionBtn && (
+
+              {unNegativeActionBtn && followUps.length > 0 && (
                 <div className="lead-action-btn">
-                  <button className="close-btn" onClick={() => handleUnNegativeForAlways()}>Move to new Lead</button>
+                  <button className="close-btn" onClick={() => handleUnNegativeForAlways()}>
+                    Move to new Lead
+                  </button>
                 </div>
               )}
             </div>

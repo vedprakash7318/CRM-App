@@ -55,7 +55,7 @@ function App() {
           <Route  path='/negative' element={<NegativeLead/>}/>
 
           <Route  path='/Main/fullLeads' element={<FullLeads/>}/>
-          <Route  path='/todayRminders/fullLeads' element={<FullLeads/>}/>
+          <Route  path='/todayReminders/fullLeads' element={<FullLeads/>}/>
           <Route  path='/leads/fullLeads' element={<FullLeads/>}/>
           <Route  path='/missedLeads/fullLeads' element={<FullLeads/>}/>
           <Route  path='/closed/fullLeads' element={<FullLeads/>}/>

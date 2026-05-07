@@ -26,7 +26,7 @@ function Profile() {
   };
   
     useEffect(()=>{
-      const tokenId=localStorages.getItem('Token');
+      const tokenId=localStorage.getItem('Token');
       if(!tokenId){
         navigate('/')
       }
