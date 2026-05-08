@@ -245,12 +245,13 @@ function LeadPageCard({ TableTitle, onFollowupAdded }) {
           timeout: 10000
         }
       );
-
       if (response.data.success) {
         setServerLeads(response.data.leads || []);
         setTotalPages(response.data.pagination.totalPages || 1);
         setTotalRecords(response.data.pagination.totalRecords || 0);
       }
+      console.log(response.data.leads);
+      
     } catch (error) {
       if (error.name !== 'CanceledError' && error.name !== 'AbortError') {
         console.error('Error fetching leads:', error);

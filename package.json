@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@capacitor/cli": "^8.3.2",
+    "@capacitor/core": "^8.3.2",
     "@coreui/coreui": "^5.2.0",
     "@coreui/coreui-pro": "^5.9.0",
     "@coreui/react": "^5.5.0",
