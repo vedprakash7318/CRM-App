@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "380846726921",
+    "project_id": "crmadmin-d988f",
+    "storage_bucket": "crmadmin-d988f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:380846726921:android:c8e77b316169812caebdd8",
+        "android_client_info": {
+          "package_name": "com.crmemployee.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC3cx1qertc01IlNXpNRQtCnd5RktULZFg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

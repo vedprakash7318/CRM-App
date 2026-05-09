@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">crmemployee</string>
-    <string name="title_activity_main">crmemployee</string>
+    <string name="app_name">Veltrix CRM</string>
+    <string name="title_activity_main">Veltrix CRM</string>
     <string name="package_name">com.crmemployee.app</string>
     <string name="custom_url_scheme">com.crmemployee.app</string>
 </resources>

@@ -5,136 +5,224 @@ import 'react-toastify/dist/ReactToastify.css';
 import "./CSS/Login.css";
 import axios from "axios";
 
-import { getToken } from "firebase/messaging";
-import { messaging } from "../Features/firebase";
+import { Capacitor } from "@capacitor/core";
+import { PushNotifications } from "@capacitor/push-notifications";
 
 const Login = () => {
+
   const APi_Url = import.meta.env.VITE_API_URL;
-  const [email, setEmail] = useState("");  
+
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [focusedField, setFocusedField] = useState("");
   const [loading, setLoading] = useState(false);
+
   const navigate = useNavigate();
 
-const initNotification = async (employee) => {
-  try {
-    console.log("🔔 Starting notification initialization...");
-    
-    const permission = await Notification.requestPermission();
-    console.log("📋 Notification permission:", permission);
-    
-    if (permission !== "granted") {
-      console.warn("⚠️ Notification permission denied");
-      toast.warning("Please enable notifications to receive updates");
-      return;
-    }
+  // 🔔 MOBILE PUSH NOTIFICATION SETUP
+  const initNotification = async (employee) => {
 
-    console.log("🔑 Generating FCM token...");
-    const token = await getToken(messaging, {
-      vapidKey: "BDGP4W2Ay1Za0e_QGGP_BpWAcen32Nk60kqUvuE_sHWxTJ1NKyBfVCayfvXKj4kRWC8C74ZdfDboxJTTm9D2hUQ"
-    });
+    try {
 
-    if (!token) {
-      console.error("❌ FCM token not generated");
-      toast.error("Failed to generate notification token");
-      return;
-    }
+      // Only for Mobile App
+      if (!Capacitor.isNativePlatform()) return;
 
-    console.log("✅ FCM Token generated:", token.substring(0, 20) + "...");
+      // Permission
+      const permission = await PushNotifications.requestPermissions();
 
-    console.log("💾 Saving FCM token to backend...");
-    const saveResponse = await axios.post(
-      `${APi_Url}/digicoder/crm/api/v1/employee/save-fcm`,
-      {
-        employeeId: employee._id,
-        fcmToken: token
+      if (permission.receive !== "granted") {
+
+        toast.warning("Notification permission denied");
+
+        return;
       }
-    );
 
-    if (saveResponse.data.success) {
-      console.log("✅ FCM token saved successfully");
-      toast.success("Notifications enabled");
+      // Register Device
+      await PushNotifications.register();
+
+      // Token Generate
+      PushNotifications.addListener("registration", async (token) => {
+
+        console.log("✅ FCM TOKEN:", token.value);
+
+        try {
+
+          await axios.post(
+            `${APi_Url}/digicoder/crm/api/v1/employee/save-fcm`,
+            {
+              employeeId: employee._id,
+              fcmToken: token.value
+            }
+          );
+
+          console.log("✅ FCM token saved");
+
+          toast.success("Notifications enabled");
+
+        } catch (err) {
+
+          console.log(err);
+
+          toast.error("Failed to save notification token");
+        }
+
+      });
+
+      // Foreground Notification
+      PushNotifications.addListener(
+        "pushNotificationReceived",
+        (notification) => {
+
+          const title = notification.title || "New Notification";
+
+          const body = notification.body || "";
+
+          // 🔊 SOUND
+          const audio = new Audio("/ring1.mp3");
+
+          audio.play().catch(() => {});
+
+          toast(
+            <>
+              <strong>{title}</strong>
+              <div>{body}</div>
+            </>
+          );
+
+        }
+      );
+
+    } catch (err) {
+
+      console.log(err);
+
+      toast.error("Notification setup failed");
+
     }
 
-  } catch (err) {
-    console.error("❌ FCM init error:", err.message);
-    toast.error("Notification setup failed: " + err.message);
-  }
-};
+  };
 
   const handleSubmit = async (e) => {
+
     e.preventDefault();
 
     if (!email || !password) {
+
       setError("All fields are required.");
+
       toast.error("All fields are required.");
+
     } else {
+
       try {
+
         setLoading(true);
 
-        const response = await axios.post(`${APi_Url}/digicoder/crm/api/v1/employee/login`, {
-          username: email,
-          password: password
-        });
+        const response = await axios.post(
+          `${APi_Url}/digicoder/crm/api/v1/employee/login`,
+          {
+            username: email,
+            password: password
+          }
+        );
 
-        if (response.status === 200) { 
+        if (response.status === 200) {
+
           setError("");
+
           toast.success("Logged in successfully!");
 
           const employee = response.data.employee;
 
           localStorage.setItem("Emp", JSON.stringify(employee));
+
           localStorage.setItem("Token", "dvhdscvydsyjucbvdsjbvju");
+
           localStorage.setItem("employeeId", employee._id);
+
           localStorage.setItem("addedBy", employee.addedBy);
 
-          initNotification(employee);
+          // 🔔 INIT NOTIFICATION
+          await initNotification(employee);
 
           setTimeout(() => {
+
             setEmail("");
+
             setPassword("");
+
             navigate('/main');
-          }, 2000); 
+
+          }, 2000);
+
         }
 
       } catch (error) {
+
+        console.log(error);
+
         if (error.response) {
+
           setError(error.response.data.message || "Invalid email or password.");
+
           toast.error(error.response.data.message || "Invalid email or password.");
+
         } else {
+
           setError("An error occurred while processing your request.");
+
           toast.error("An error occurred while processing your request.");
+
         }
+
       } finally {
+
         setLoading(false);
+
       }
+
     }
+
   };
 
   const handleRememberMe = (e) => {
+
     setRememberMe(e.target.checked);
+
   };
 
   const handleFocus = (field) => {
+
     setFocusedField(field);
+
   };
 
   const handleBlur = () => {
+
     setFocusedField("");
+
   };
 
   return (
+
     <div className="login-container">
+
       <div className="login-form">
+
         <h1>Welcome Back</h1>
+
         <p>Access Your Account</p>
 
         <form onSubmit={handleSubmit}>
-            <legend>Email</legend>
+
+          <legend>Email</legend>
+
           <fieldset className={focusedField === "email" ? "focused" : ""}>
+
             <div className="input-group">
+
               <input
                 type="email"
                 id="email"
@@ -146,11 +234,17 @@ const initNotification = async (employee) => {
                 onBlur={handleBlur}
                 required
               />
+
             </div>
+
           </fieldset>
-            <legend>Password</legend>
+
+          <legend>Password</legend>
+
           <fieldset className={focusedField === "password" ? "focused" : ""}>
+
             <div className="input-group">
+
               <input
                 type="password"
                 id="password"
@@ -162,28 +256,43 @@ const initNotification = async (employee) => {
                 onBlur={handleBlur}
                 required
               />
+
             </div>
+
           </fieldset>
+
           <br />
+
           {error && <div className="error-message">{error}</div>}
 
-          <button 
-            type="submit" 
-            className="submit-btn" 
+          <button
+            type="submit"
+            className="submit-btn"
             disabled={loading}
           >
+
             {loading ? (
+
               <div className="spinner"></div>
+
             ) : (
+
               "Login"
+
             )}
+
           </button>
+
         </form>
+
       </div>
 
       <ToastContainer />
+
     </div>
+
   );
+
 };
 
 export default Login;
